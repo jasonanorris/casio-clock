@@ -31,7 +31,7 @@ PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio`
 
 ## Current Project Status
 
-Current milestone: capacitive touch serial bring-up verified on the physical display.
+Current milestone: LVGL bring-up on a dedicated `lvgl-bringup` branch.
 
 The firmware:
 
@@ -43,12 +43,13 @@ The firmware:
 - prints heap and PSRAM availability
 - initializes the CH422G IO expander for LCD reset/backlight
 - initializes the ST7262 RGB LCD using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` timing/pin data
-- draws a color-bar test pattern
+- initializes LVGL 8.4.0
+- displays a minimal `LVGL OK` screen
 - initializes the GT911 capacitive touch controller using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` touch data
-- prints touch coordinates over serial when the screen is touched
+- routes touch input into LVGL and updates a button press counter
 - prints a heartbeat once per second
 
-It does not initialize Wi-Fi, RTC, LVGL, or the clock UI yet.
+It does not initialize Wi-Fi, RTC, or the clock UI yet.
 
 The initial LCD test showed an observed refresh callback rate of about 24 FPS, which matches the 21 MHz pixel clock and official porch timing currently in use. Some visible flicker may be expected at this bring-up stage.
 
@@ -64,6 +65,8 @@ There does not appear to be a standard exact PlatformIO board ID for the Wavesha
 - upload and monitor ports are not fixed in `platformio.ini`; pass the current `/dev/ttyACM*` path on the command line when needed
 
 The PlatformIO platform is pinned to the pioarduino ESP32 platform release for Arduino-ESP32 `3.0.7`, matching Waveshare's guidance to use Arduino ESP32 3.x and its FAQ note recommending Arduino ESP32 `3.0.7` for at least some examples.
+
+LVGL is pinned to `lvgl/lvgl@8.4.0`, matching Waveshare's LVGL v8 example guidance for the ESP32-S3-Touch-LCD-5 family.
 
 The display bring-up branch vendors the official Waveshare-bundled Arduino libraries under `lib/`:
 
@@ -85,6 +88,8 @@ The touch serial test uses the official 5B touch details:
 - reset through CH422G EXIO1
 
 Hardware verification: the board successfully prints GT911 touch coordinates and release events over serial while the LCD color bars remain visible.
+
+The LVGL bring-up test is intentionally minimal. It replaces the color-bar screen at boot with a simple LVGL scene and a touchable button. The older color-bar and touch-serial modules are still present as known-good hardware references.
 
 ## Build
 
@@ -136,7 +141,7 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 2. Find and verify the correct official Waveshare 1024x600 example. Done.
 3. Display a simple image, color, or test pattern on the LCD. Done on `lcd-color-test`.
 4. Bring up capacitive touch input. Done on `lcd-color-test`.
-5. Add LVGL.
+5. Add LVGL. In progress on `lvgl-bringup`.
 6. Build the Casio F-91W-inspired clock UI.
 7. Add Wi-Fi/NTP time synchronization.
 8. Evaluate the onboard RTC and other peripherals.

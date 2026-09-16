@@ -3,8 +3,7 @@
 #include <esp_chip_info.h>
 
 #include "hardware_config.h"
-#include "lcd_color_test.h"
-#include "touch_serial_test.h"
+#include "lvgl_bringup.h"
 
 namespace {
 uint32_t heartbeatCount = 0;
@@ -60,7 +59,7 @@ void printStartupBanner() {
   printMemoryInfo();
 
   Serial.println();
-  Serial.println("Starting LCD color-bar test.");
+  Serial.println("Starting LVGL bring-up test.");
 }
 }  // namespace
 
@@ -68,14 +67,13 @@ void setup() {
   Serial.begin(HardwareConfig::SerialBaud);
   delay(1500);
   printStartupBanner();
-  runLcdColorTest();
-  initTouchSerialTest();
+  initLvglBringup();
   Serial.println();
   Serial.println("Heartbeat starting.");
 }
 
 void loop() {
-  pollTouchSerialTest();
+  runLvglBringupLoop();
 
   const unsigned long now = millis();
   if (now - lastHeartbeatMs >= 1000) {
@@ -88,5 +86,5 @@ void loop() {
                   static_cast<unsigned long>(ESP.getFreePsram()));
   }
 
-  delay(10);
+  delay(5);
 }
