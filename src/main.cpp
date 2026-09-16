@@ -59,7 +59,7 @@ void printStartupBanner() {
   printMemoryInfo();
 
   Serial.println();
-  Serial.println("Starting LVGL bring-up test.");
+  Serial.println("Starting LVGL clock prototype.");
 }
 }  // namespace
 

@@ -72,8 +72,9 @@ lv_disp_drv_t displayDriver;
 lv_indev_drv_t inputDriver;
 lv_color_t *drawBufferPixels = nullptr;
 lv_obj_t *statusLabel = nullptr;
+lv_obj_t *timeLabel = nullptr;
 unsigned long lastLvglTickMs = 0;
-uint32_t buttonPressCount = 0;
+unsigned long lastClockUpdateMs = 0;
 
 bool initIoExpander(esp_expander::CH422G &expander) {
   Serial.println("Initializing CH422G for LCD/touch reset and backlight");
@@ -290,41 +291,50 @@ void touchRead(lv_indev_drv_t *indev, lv_indev_data_t *data) {
   data->point = lastPoint;
 }
 
-void onButtonEvent(lv_event_t *event) {
-  if (lv_event_get_code(event) != LV_EVENT_CLICKED || statusLabel == nullptr) {
+void updateClockLabel() {
+  if (timeLabel == nullptr) {
     return;
   }
 
-  ++buttonPressCount;
-  lv_label_set_text_fmt(statusLabel, "Touch OK: %lu",
-                        static_cast<unsigned long>(buttonPressCount));
+  const unsigned long totalSeconds = millis() / 1000;
+  const unsigned long hours = (totalSeconds / 3600) % 24;
+  const unsigned long minutes = (totalSeconds / 60) % 60;
+  const unsigned long seconds = totalSeconds % 60;
+  lv_label_set_text_fmt(timeLabel, "%02lu:%02lu:%02lu", hours, minutes,
+                        seconds);
+}
+
+void onScreenPressed(lv_event_t *event) {
+  if (lv_event_get_code(event) != LV_EVENT_PRESSED || statusLabel == nullptr) {
+    return;
+  }
+
+  lv_label_set_text(statusLabel, "Touch input OK");
 }
 
 void createLvglUi() {
   lv_obj_t *screen = lv_scr_act();
   lv_obj_set_style_bg_color(screen, lv_color_hex(0x101820), 0);
   lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, 0);
+  lv_obj_add_event_cb(screen, onScreenPressed, LV_EVENT_PRESSED, nullptr);
 
   lv_obj_t *title = lv_label_create(screen);
-  lv_label_set_text(title, "LVGL OK");
-  lv_obj_set_style_text_color(title, lv_color_hex(0xF2F4F3), 0);
-  lv_obj_set_style_text_font(title, &lv_font_montserrat_32, 0);
-  lv_obj_align(title, LV_ALIGN_CENTER, 0, -70);
+  lv_label_set_text(title, "Clock prototype");
+  lv_obj_set_style_text_color(title, lv_color_hex(0xDDE2E6), 0);
+  lv_obj_set_style_text_font(title, &lv_font_montserrat_20, 0);
+  lv_obj_align(title, LV_ALIGN_CENTER, 0, -125);
+
+  timeLabel = lv_label_create(screen);
+  lv_obj_set_style_text_color(timeLabel, lv_color_hex(0xF2F4F3), 0);
+  lv_obj_set_style_text_font(timeLabel, &lv_font_montserrat_48, 0);
+  lv_obj_align(timeLabel, LV_ALIGN_CENTER, 0, -20);
+  updateClockLabel();
 
   statusLabel = lv_label_create(screen);
-  lv_label_set_text(statusLabel, "Touch the button");
+  lv_label_set_text(statusLabel, "millis() timebase");
   lv_obj_set_style_text_color(statusLabel, lv_color_hex(0xDDE2E6), 0);
   lv_obj_set_style_text_font(statusLabel, &lv_font_montserrat_20, 0);
-  lv_obj_align(statusLabel, LV_ALIGN_CENTER, 0, -20);
-
-  lv_obj_t *button = lv_btn_create(screen);
-  lv_obj_set_size(button, 220, 76);
-  lv_obj_align(button, LV_ALIGN_CENTER, 0, 70);
-  lv_obj_add_event_cb(button, onButtonEvent, LV_EVENT_CLICKED, nullptr);
-
-  lv_obj_t *buttonLabel = lv_label_create(button);
-  lv_label_set_text(buttonLabel, "Touch");
-  lv_obj_center(buttonLabel);
+  lv_obj_align(statusLabel, LV_ALIGN_CENTER, 0, 80);
 }
 
 bool initLvgl() {
@@ -404,6 +414,11 @@ void runLvglBringupLoop() {
   if (now != lastLvglTickMs) {
     lv_tick_inc(now - lastLvglTickMs);
     lastLvglTickMs = now;
+  }
+
+  if (now - lastClockUpdateMs >= 1000) {
+    lastClockUpdateMs = now;
+    updateClockLabel();
   }
 
   lv_timer_handler();

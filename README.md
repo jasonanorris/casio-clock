@@ -31,7 +31,7 @@ PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio`
 
 ## Current Project Status
 
-Current milestone: LVGL bring-up verified on the physical display.
+Current milestone: first simple LVGL clock prototype on `clock-prototype`.
 
 The firmware:
 
@@ -44,12 +44,12 @@ The firmware:
 - initializes the CH422G IO expander for LCD reset/backlight
 - initializes the ST7262 RGB LCD using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` timing/pin data
 - initializes LVGL 8.4.0
-- displays a minimal `LVGL OK` screen
+- displays a plain digital `HH:MM:SS` label
 - initializes the GT911 capacitive touch controller using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` touch data
-- routes touch input into LVGL and updates a button press counter
+- routes touch input into LVGL and updates the status label when pressed
 - prints a heartbeat once per second
 
-It does not initialize Wi-Fi, RTC, or the clock UI yet.
+It does not initialize Wi-Fi, RTC, NTP, or the final Casio-inspired clock UI yet. The displayed time is elapsed time from boot using `millis()`.
 
 The initial LCD test showed an observed refresh callback rate of about 24 FPS, which matches the 21 MHz pixel clock and official porch timing currently in use. Some visible flicker may be expected at this bring-up stage.
 
@@ -92,6 +92,8 @@ Hardware verification: the board successfully prints GT911 touch coordinates and
 The LVGL bring-up test is intentionally minimal. It replaces the color-bar screen at boot with a simple LVGL scene and a touchable button. The older color-bar and touch-serial modules are still present as known-good hardware references.
 
 Hardware verification: the board successfully displayed the `LVGL OK` screen and the touch button worked.
+
+The `clock-prototype` branch replaces the LVGL button demo with a plain boot-time digital clock. This is a rendering/update prototype only; real time synchronization comes later.
 
 ## Build
 
@@ -144,9 +146,10 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 3. Display a simple image, color, or test pattern on the LCD. Done on `lcd-color-test`.
 4. Bring up capacitive touch input. Done on `lcd-color-test`.
 5. Add LVGL. Done on `lvgl-bringup`.
-6. Build the Casio F-91W-inspired clock UI.
-7. Add Wi-Fi/NTP time synchronization.
-8. Evaluate the onboard RTC and other peripherals.
+6. Build first simple clock screen. In progress on `clock-prototype`.
+7. Build the Casio F-91W-inspired clock UI.
+8. Add Wi-Fi/NTP time synchronization.
+9. Evaluate the onboard RTC and other peripherals.
 
 ## References
 
