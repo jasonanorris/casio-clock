@@ -31,7 +31,7 @@ PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio`
 
 ## Current Project Status
 
-Current milestone: first LCD color-bar bring-up.
+Current milestone: first LCD color-bar bring-up. The color bars have been verified on the physical display.
 
 The firmware:
 
@@ -47,6 +47,8 @@ The firmware:
 - prints a heartbeat once per second
 
 It does not initialize Wi-Fi, RTC, LVGL, or the clock UI yet. Touch is intentionally not used by this test.
+
+The initial LCD test showed an observed refresh callback rate of about 24 FPS, which matches the 21 MHz pixel clock and official porch timing currently in use. Some visible flicker may be expected at this bring-up stage.
 
 ## PlatformIO Configuration
 
@@ -119,7 +121,7 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 
 1. Build and upload the minimal serial sanity test. Done.
 2. Find and verify the correct official Waveshare 1024x600 example. Done.
-3. Display a simple image, color, or test pattern on the LCD. In progress on `lcd-color-test`.
+3. Display a simple image, color, or test pattern on the LCD. Done on `lcd-color-test`.
 4. Bring up capacitive touch input.
 5. Add LVGL.
 6. Build the Casio F-91W-inspired clock UI.

@@ -52,35 +52,6 @@ constexpr uint8_t TouchResetExio = 1;
 constexpr uint8_t LcdBacklightExio = 2;
 constexpr uint8_t LcdResetExio = 3;
 
-DRAM_ATTR int frameCount = 0;
-DRAM_ATTR int fps = 0;
-DRAM_ATTR long fpsWindowStartMs = 0;
-
-IRAM_ATTR bool onLcdRefreshFinish(void *userData) {
-  (void)userData;
-
-  if (fpsWindowStartMs == 0) {
-    fpsWindowStartMs = millis();
-    return false;
-  }
-
-  ++frameCount;
-  if (frameCount >= 50) {
-    fps = 50 * 1000 / (millis() - fpsWindowStartMs);
-    esp_rom_printf("LCD FPS: %d\n", fps);
-    frameCount = 0;
-    fpsWindowStartMs = millis();
-  }
-
-  return false;
-}
-
-IRAM_ATTR bool onLcdDrawFinish(void *userData) {
-  (void)userData;
-  esp_rom_printf("LCD draw finish callback\n");
-  return false;
-}
-
 bool initIoExpander(esp_expander::CH422G &expander) {
   Serial.println("Initializing CH422G IO expander");
 
@@ -190,9 +161,6 @@ void runLcdColorTest() {
     setBacklight(expander, false);
     return;
   }
-
-  lcd->attachRefreshFinishCallback(onLcdRefreshFinish);
-  lcd->attachDrawBitmapFinishCallback(onLcdDrawFinish);
 
   if (!lcd->begin()) {
     Serial.println("LCD begin failed");

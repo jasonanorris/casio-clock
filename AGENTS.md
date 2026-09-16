@@ -10,7 +10,7 @@ Project path:
 /home/mint/projects/casio-clock
 ```
 
-The current milestone is LCD color-bar bring-up. Do not implement the clock UI yet.
+The current milestone is LCD color-bar bring-up, verified on the physical display. Do not implement the clock UI yet.
 
 ## Target Hardware
 
@@ -69,6 +69,8 @@ The current LCD test code lives in `src/lcd_color_test.cpp` and uses the officia
 
 The vendored `ESP32_Display_Panel` driver selection is deliberately configured in `lib/ESP32_Display_Panel/esp_panel_drivers_conf.h` to enable the RGB bus, ST7262 LCD driver, and CH422G IO expander. Without this, the RGB bus factory may log `Disabled or unsupported type: 2(RGB)` and LCD initialization will fail.
 
+The first visible color-bar test reported about 24 FPS over the refresh callback, matching the current 21 MHz pixel clock and official porch timing. Some visible flicker is expected until display timing/buffering is tuned with verified 1024x600 references.
+
 ## Development Commands
 
 Build:
@@ -107,7 +109,7 @@ If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload o
 
 1. Minimal serial test that prints chip, flash, PSRAM, heap, and heartbeat information. Done.
 2. Find and verify the correct official Waveshare 1024x600 example. Done.
-3. Display a simple image, color, or test pattern on the LCD. In progress.
+3. Display a simple image, color, or test pattern on the LCD. Done.
 4. Add touch input.
 5. Add LVGL.
 6. Build the clock UI.
