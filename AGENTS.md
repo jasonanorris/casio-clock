@@ -2,62 +2,104 @@
 
 ## Project
 
-This is a web development project under `/home/mint/projects`.
+This is an embedded firmware project for a standalone, oversized Casio F-91W-inspired digital clock.
 
-Before making significant changes, understand the existing structure and ask questions when requirements are unclear.
-
-## Development Preferences
-
-Prefer:
-
-- Simple, maintainable code
-- Vanilla HTML, CSS, and JavaScript for small projects
-- Minimal dependencies
-- Readability over cleverness
-- Clear file and function names
-- Small, focused changes
-
-Avoid adding large frameworks unless they provide a clear benefit.
-
-## Local Workflow
-
-If this is a static site, it should work by opening `index.html` directly or by using a simple local web server.
-
-Document project-specific commands here:
-
-```bash
-# install
-TBD
-
-# run locally
-TBD
-
-# build
-TBD
-```
-
-## Deployment
-
-Deployment target: TBD
-
-Possible targets:
-
-- Namecheap web hosting
-- Home server
-- Cloudflare
-- GitHub Pages
-
-For infrastructure, deployment, DNS, server, hosting, Docker, Cloudflare, Tailscale, or Namecheap questions, read:
+Project path:
 
 ```text
-/home/mint/projects/personal-dev-env/infrastructure.md
+/home/mint/projects/casio-clock
 ```
 
-## Documentation
+The current milestone is a minimal serial hardware sanity test. Do not implement the clock UI yet.
 
-When setup, deployment, or architecture changes, update:
+## Target Hardware
 
-- `README.md`
-- This `AGENTS.md`
-- Relevant docs in `/home/mint/projects/personal-dev-env`
+Target board:
 
+- Waveshare ESP32-S3-Touch-LCD-5B
+- 5-inch capacitive touchscreen
+- 1024x600 RGB LCD
+- ESP32-S3-WROOM-1-N16R8
+- 16 MB flash
+- 8 MB PSRAM
+- Native ESP32-S3 USB usually appears on Linux as `/dev/ttyACM0`, but may re-enumerate as `/dev/ttyACM1` or another ACM number after reset
+- USB ID observed by Linux: `303a:1001 Espressif USB JTAG/serial debug unit`
+
+Important warning:
+
+- This is the 1024x600 `ESP32-S3-Touch-LCD-5B` variant.
+- Do not substitute settings, pin mappings, LCD timings, or examples for the 800x480 `ESP32-S3-Touch-LCD-5` variant.
+- Do not guess LCD timings or GPIO mappings.
+- Prefer official Waveshare examples/documentation and Espressif/PlatformIO documentation over assumptions.
+
+## Stack
+
+Preferred stack:
+
+- PlatformIO
+- Arduino ESP32 framework initially
+- C/C++
+- Git
+- LVGL later, after basic board bring-up
+
+Do not add LVGL, display drivers, touch drivers, or Waveshare libraries until a milestone actually needs them.
+
+## Current PlatformIO Baseline
+
+The first baseline uses a local PlatformIO board manifest because there is no exact standard PlatformIO board ID for this Waveshare board.
+
+Required board-level configuration is kept in `platformio.ini`:
+
+- `board = waveshare_esp32_s3_touch_lcd_5b`
+- 16 MB flash
+- 8 MB OPI PSRAM
+- QIO flash mode
+- USB CDC on boot for native USB serial
+- upload and monitor ports are passed on the command line instead of fixed in `platformio.ini`
+
+Keep hardware-specific settings isolated in `platformio.ini`, `boards/waveshare_esp32_s3_touch_lcd_5b.json`, and `include/hardware_config.h`.
+
+## Development Commands
+
+Build:
+
+```bash
+PLATFORMIO_CORE_DIR=.pio .venv/bin/pio run
+```
+
+Upload, only after explicit user approval:
+
+```bash
+PLATFORMIO_CORE_DIR=.pio .venv/bin/pio run -t upload --upload-port /dev/ttyACM0
+```
+
+Serial monitor:
+
+```bash
+PLATFORMIO_CORE_DIR=.pio .venv/bin/pio device monitor --port /dev/ttyACM0 --baud 115200
+```
+
+If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload or monitor command. Check available ports with `ls -l /dev/ttyACM*`.
+
+## Development Rules
+
+- Inspect the project before modifying it.
+- Keep changes small, readable, and maintainable.
+- Keep the first milestones extremely simple.
+- Ask before flashing the board.
+- Ask before making major architecture changes.
+- Do not invent hardware configuration.
+- Do not copy configuration from the 800x480 model.
+- Avoid large dependencies unless they clearly solve the active milestone.
+- Update `README.md` and this file when setup, hardware assumptions, or workflow changes.
+
+## Milestones
+
+1. Minimal serial test that prints chip, flash, PSRAM, heap, and heartbeat information.
+2. Find and verify the correct official Waveshare 1024x600 example.
+3. Display a simple image, color, or test pattern on the LCD.
+4. Add touch input.
+5. Add LVGL.
+6. Build the clock UI.
+7. Add Wi-Fi/NTP time synchronization.
+8. Evaluate onboard RTC and other peripherals.

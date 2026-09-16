@@ -1,7 +1,121 @@
 # casio-clock
 
-Web project under `/home/mint/projects`.
+Embedded firmware project for a standalone, oversized Casio F-91W-inspired digital clock.
 
-## Local Development
+## Target Hardware
 
-Open `index.html` directly or run a simple local server from this directory.
+This project targets the Waveshare `ESP32-S3-Touch-LCD-5B` development board:
+
+- ESP32-S3-WROOM-1-N16R8 module
+- 16 MB flash
+- 8 MB PSRAM
+- 5-inch 1024x600 RGB LCD
+- Capacitive touch
+- Native ESP32-S3 USB
+- Linux serial device: usually `/dev/ttyACM0`, but native USB can re-enumerate as `/dev/ttyACM1` or another ACM number after reset
+- Observed USB ID: `303a:1001 Espressif USB JTAG/serial debug unit`
+
+Important: this is the 1024x600 `5B` model, not the 800x480 `ESP32-S3-Touch-LCD-5` model. LCD settings, pin mappings, timings, and examples must be verified for the 1024x600 board before use.
+
+## Development Environment
+
+- Linux Mint
+- VS Code
+- Codex
+- PlatformIO CLI
+- Arduino ESP32 framework
+- C/C++
+- Git
+
+PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio` from the project root.
+
+## Current Project Status
+
+Current milestone: minimal serial sanity firmware only.
+
+The firmware:
+
+- initializes serial at 115200 baud
+- prints a clear startup banner
+- prints ESP32 chip information
+- prints flash size
+- prints detected PSRAM size
+- prints heap and PSRAM availability
+- prints a heartbeat once per second
+
+It does not initialize the display, touch controller, Wi-Fi, RTC, LVGL, or any GPIO peripherals yet.
+
+## PlatformIO Configuration
+
+There does not appear to be a standard exact PlatformIO board ID for the Waveshare `ESP32-S3-Touch-LCD-5B`, so this project includes a local board manifest at `boards/waveshare_esp32_s3_touch_lcd_5b.json`. It uses the generic ESP32-S3 Arduino variant while explicitly configuring the important board facts:
+
+- `board = waveshare_esp32_s3_touch_lcd_5b`
+- 16 MB flash
+- 8 MB OPI PSRAM
+- QIO flash mode
+- USB CDC on boot for native USB serial
+- upload and monitor ports are not fixed in `platformio.ini`; pass the current `/dev/ttyACM*` path on the command line when needed
+
+The PlatformIO platform is pinned to the pioarduino ESP32 platform release for Arduino-ESP32 `3.0.7`, matching Waveshare's guidance to use Arduino ESP32 3.x and its FAQ note recommending Arduino ESP32 `3.0.7` for at least some examples.
+
+## Build
+
+```bash
+PLATFORMIO_CORE_DIR=.pio .venv/bin/pio run
+```
+
+## Upload
+
+Do not upload without confirming with the project owner first.
+
+Find the current native USB serial device:
+
+```bash
+ls -l /dev/ttyACM*
+```
+
+When approved, upload to the current native USB serial device. Example:
+
+```bash
+PLATFORMIO_CORE_DIR=.pio .venv/bin/pio run -t upload --upload-port /dev/ttyACM0
+```
+
+If the board re-enumerated as `/dev/ttyACM1`, use:
+
+```bash
+PLATFORMIO_CORE_DIR=.pio .venv/bin/pio run -t upload --upload-port /dev/ttyACM1
+```
+
+## Serial Monitor
+
+After upload, open the serial monitor with the current ACM port. Example:
+
+```bash
+PLATFORMIO_CORE_DIR=.pio .venv/bin/pio device monitor --port /dev/ttyACM0 --baud 115200
+```
+
+If the board re-enumerated as `/dev/ttyACM1`, use:
+
+```bash
+PLATFORMIO_CORE_DIR=.pio .venv/bin/pio device monitor --port /dev/ttyACM1 --baud 115200
+```
+
+If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and restart the monitor with the new port.
+
+## Planned Milestones
+
+1. Build and upload the minimal serial sanity test.
+2. Find and verify the correct official Waveshare 1024x600 example.
+3. Display a simple image, color, or test pattern on the LCD.
+4. Bring up capacitive touch input.
+5. Add LVGL.
+6. Build the Casio F-91W-inspired clock UI.
+7. Add Wi-Fi/NTP time synchronization.
+8. Evaluate the onboard RTC and other peripherals.
+
+## References
+
+- Waveshare documentation for `ESP32-S3-Touch-LCD-5` family
+- Waveshare official GitHub examples for `ESP32-S3-Touch-LCD-5`
+- Espressif Arduino ESP32 framework documentation
+- PlatformIO Espressif32 documentation
