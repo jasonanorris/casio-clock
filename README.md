@@ -31,7 +31,7 @@ PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio`
 
 ## Current Project Status
 
-Current milestone: first LCD color-bar bring-up. The color bars have been verified on the physical display.
+Current milestone: capacitive touch serial bring-up on top of the verified LCD color-bar test.
 
 The firmware:
 
@@ -44,9 +44,11 @@ The firmware:
 - initializes the CH422G IO expander for LCD reset/backlight
 - initializes the ST7262 RGB LCD using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` timing/pin data
 - draws a color-bar test pattern
+- initializes the GT911 capacitive touch controller using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` touch data
+- prints touch coordinates over serial when the screen is touched
 - prints a heartbeat once per second
 
-It does not initialize Wi-Fi, RTC, LVGL, or the clock UI yet. Touch is intentionally not used by this test.
+It does not initialize Wi-Fi, RTC, LVGL, or the clock UI yet.
 
 The initial LCD test showed an observed refresh callback rate of about 24 FPS, which matches the 21 MHz pixel clock and official porch timing currently in use. Some visible flicker may be expected at this bring-up stage.
 
@@ -71,7 +73,16 @@ The display bring-up branch vendors the official Waveshare-bundled Arduino libra
 
 These are kept local so the display test builds against the same versions shipped with Waveshare's example package.
 
-For LCD bring-up, `lib/ESP32_Display_Panel/esp_panel_drivers_conf.h` is intentionally narrowed to the required RGB bus, ST7262 LCD driver, and CH422G IO expander. This keeps the Waveshare 1024x600 display path explicit and avoids the RGB bus factory being compiled without runtime RGB creation support.
+For LCD and touch bring-up, `lib/ESP32_Display_Panel/esp_panel_drivers_conf.h` is intentionally narrowed to the required RGB bus, I2C bus, ST7262 LCD driver, GT911 touch driver, and CH422G IO expander. This keeps the Waveshare 1024x600 display path explicit and avoids required drivers being compiled without runtime creation support.
+
+The touch serial test uses the official 5B touch details:
+
+- GT911 capacitive touch controller
+- I2C SDA GPIO 8
+- I2C SCL GPIO 9
+- GT911 I2C address `0x5D`
+- interrupt GPIO 4
+- reset through CH422G EXIO1
 
 ## Build
 
@@ -122,7 +133,7 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 1. Build and upload the minimal serial sanity test. Done.
 2. Find and verify the correct official Waveshare 1024x600 example. Done.
 3. Display a simple image, color, or test pattern on the LCD. Done on `lcd-color-test`.
-4. Bring up capacitive touch input.
+4. Bring up capacitive touch input. In progress on `lcd-color-test`.
 5. Add LVGL.
 6. Build the Casio F-91W-inspired clock UI.
 7. Add Wi-Fi/NTP time synchronization.

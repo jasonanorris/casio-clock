@@ -4,9 +4,11 @@
 
 #include "hardware_config.h"
 #include "lcd_color_test.h"
+#include "touch_serial_test.h"
 
 namespace {
 uint32_t heartbeatCount = 0;
+unsigned long lastHeartbeatMs = 0;
 
 void printBytes(const char *label, uint32_t bytes) {
   Serial.printf("%s: %lu bytes (%.2f MB)\n", label,
@@ -67,16 +69,24 @@ void setup() {
   delay(1500);
   printStartupBanner();
   runLcdColorTest();
+  initTouchSerialTest();
   Serial.println();
   Serial.println("Heartbeat starting.");
 }
 
 void loop() {
-  ++heartbeatCount;
-  Serial.printf("heartbeat=%lu uptime_ms=%lu free_heap=%lu free_psram=%lu\n",
-                static_cast<unsigned long>(heartbeatCount),
-                static_cast<unsigned long>(millis()),
-                static_cast<unsigned long>(ESP.getFreeHeap()),
-                static_cast<unsigned long>(ESP.getFreePsram()));
-  delay(1000);
+  pollTouchSerialTest();
+
+  const unsigned long now = millis();
+  if (now - lastHeartbeatMs >= 1000) {
+    lastHeartbeatMs = now;
+    ++heartbeatCount;
+    Serial.printf("heartbeat=%lu uptime_ms=%lu free_heap=%lu free_psram=%lu\n",
+                  static_cast<unsigned long>(heartbeatCount),
+                  static_cast<unsigned long>(now),
+                  static_cast<unsigned long>(ESP.getFreeHeap()),
+                  static_cast<unsigned long>(ESP.getFreePsram()));
+  }
+
+  delay(10);
 }

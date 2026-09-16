@@ -29,7 +29,7 @@
     #define ESP_PANEL_DRIVERS_BUS_USE_SPI               (0)
     #define ESP_PANEL_DRIVERS_BUS_USE_QSPI              (0)
     #define ESP_PANEL_DRIVERS_BUS_USE_RGB               (1)
-    #define ESP_PANEL_DRIVERS_BUS_USE_I2C               (0)
+    #define ESP_PANEL_DRIVERS_BUS_USE_I2C               (1)
     #define ESP_PANEL_DRIVERS_BUS_USE_MIPI_DSI          (0)
 #endif // ESP_PANEL_DRIVERS_BUS_USE_ALL
 
@@ -127,7 +127,7 @@
     #define ESP_PANEL_DRIVERS_TOUCH_USE_CHSC6540        (0)
     #define ESP_PANEL_DRIVERS_TOUCH_USE_CST816S         (0)
     #define ESP_PANEL_DRIVERS_TOUCH_USE_FT5x06          (0)
-    #define ESP_PANEL_DRIVERS_TOUCH_USE_GT911           (0)
+    #define ESP_PANEL_DRIVERS_TOUCH_USE_GT911           (1)
     #define ESP_PANEL_DRIVERS_TOUCH_USE_GT1151          (0)
     #define ESP_PANEL_DRIVERS_TOUCH_USE_SPD2010         (0)
     #define ESP_PANEL_DRIVERS_TOUCH_USE_ST1633          (0)
