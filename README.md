@@ -31,7 +31,7 @@ PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio`
 
 ## Current Project Status
 
-Current milestone: LVGL bring-up on a dedicated `lvgl-bringup` branch.
+Current milestone: LVGL bring-up verified on the physical display.
 
 The firmware:
 
@@ -91,6 +91,8 @@ Hardware verification: the board successfully prints GT911 touch coordinates and
 
 The LVGL bring-up test is intentionally minimal. It replaces the color-bar screen at boot with a simple LVGL scene and a touchable button. The older color-bar and touch-serial modules are still present as known-good hardware references.
 
+Hardware verification: the board successfully displayed the `LVGL OK` screen and the touch button worked.
+
 ## Build
 
 ```bash
@@ -141,7 +143,7 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 2. Find and verify the correct official Waveshare 1024x600 example. Done.
 3. Display a simple image, color, or test pattern on the LCD. Done on `lcd-color-test`.
 4. Bring up capacitive touch input. Done on `lcd-color-test`.
-5. Add LVGL. In progress on `lvgl-bringup`.
+5. Add LVGL. Done on `lvgl-bringup`.
 6. Build the Casio F-91W-inspired clock UI.
 7. Add Wi-Fi/NTP time synchronization.
 8. Evaluate the onboard RTC and other peripherals.

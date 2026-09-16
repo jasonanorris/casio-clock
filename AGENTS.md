@@ -10,7 +10,7 @@ Project path:
 /home/mint/projects/casio-clock
 ```
 
-The current milestone is LVGL bring-up on the `lvgl-bringup` branch. Do not implement the clock UI yet.
+The current milestone is LVGL bring-up, verified on the physical display. Do not implement the clock UI yet.
 
 ## Target Hardware
 
@@ -73,7 +73,7 @@ The first visible color-bar test reported about 24 FPS over the refresh callback
 
 The touch serial test lives in `src/touch_serial_test.cpp`. It uses official 5B values: GT911 over I2C SDA GPIO 8/SCL GPIO 9 at address `0x5D`, interrupt GPIO 4, and reset through CH422G EXIO1. Hardware has printed touch coordinates and release events successfully.
 
-The LVGL bring-up test lives in `src/lvgl_bringup.cpp` and uses `include/lv_conf.h`. It pins `lvgl/lvgl@8.4.0` in `platformio.ini`, matching Waveshare's LVGL v8 guidance for the ESP32-S3-Touch-LCD-5 family. This milestone should remain a minimal LVGL proof screen with touch routed into LVGL; do not build the Casio clock UI on this branch unless explicitly asked.
+The LVGL bring-up test lives in `src/lvgl_bringup.cpp` and uses `include/lv_conf.h`. It pins `lvgl/lvgl@8.4.0` in `platformio.ini`, matching Waveshare's LVGL v8 guidance for the ESP32-S3-Touch-LCD-5 family. Hardware displayed the `LVGL OK` screen and the touch button worked.
 
 ## Development Commands
 
@@ -115,7 +115,7 @@ If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload o
 2. Find and verify the correct official Waveshare 1024x600 example. Done.
 3. Display a simple image, color, or test pattern on the LCD. Done.
 4. Add touch input. Done.
-5. Add LVGL. In progress.
+5. Add LVGL. Done.
 6. Build the clock UI.
 7. Add Wi-Fi/NTP time synchronization.
 8. Evaluate onboard RTC and other peripherals.
