@@ -31,7 +31,7 @@ PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio`
 
 ## Current Project Status
 
-Current milestone: minimal serial sanity firmware only.
+Current milestone: first LCD color-bar bring-up.
 
 The firmware:
 
@@ -41,9 +41,12 @@ The firmware:
 - prints flash size
 - prints detected PSRAM size
 - prints heap and PSRAM availability
+- initializes the CH422G IO expander for LCD reset/backlight
+- initializes the ST7262 RGB LCD using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` timing/pin data
+- draws a color-bar test pattern
 - prints a heartbeat once per second
 
-It does not initialize the display, touch controller, Wi-Fi, RTC, LVGL, or any GPIO peripherals yet.
+It does not initialize Wi-Fi, RTC, LVGL, or the clock UI yet. Touch is intentionally not used by this test.
 
 ## PlatformIO Configuration
 
@@ -57,6 +60,16 @@ There does not appear to be a standard exact PlatformIO board ID for the Wavesha
 - upload and monitor ports are not fixed in `platformio.ini`; pass the current `/dev/ttyACM*` path on the command line when needed
 
 The PlatformIO platform is pinned to the pioarduino ESP32 platform release for Arduino-ESP32 `3.0.7`, matching Waveshare's guidance to use Arduino ESP32 3.x and its FAQ note recommending Arduino ESP32 `3.0.7` for at least some examples.
+
+The display bring-up branch vendors the official Waveshare-bundled Arduino libraries under `lib/`:
+
+- `ESP32_Display_Panel` 1.0.0
+- `ESP32_IO_Expander` 1.0.1
+- `esp-lib-utils` 0.1.2
+
+These are kept local so the display test builds against the same versions shipped with Waveshare's example package.
+
+For LCD bring-up, `lib/ESP32_Display_Panel/esp_panel_drivers_conf.h` is intentionally narrowed to the required RGB bus, ST7262 LCD driver, and CH422G IO expander. This keeps the Waveshare 1024x600 display path explicit and avoids the RGB bus factory being compiled without runtime RGB creation support.
 
 ## Build
 
@@ -104,9 +117,9 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 
 ## Planned Milestones
 
-1. Build and upload the minimal serial sanity test.
-2. Find and verify the correct official Waveshare 1024x600 example.
-3. Display a simple image, color, or test pattern on the LCD.
+1. Build and upload the minimal serial sanity test. Done.
+2. Find and verify the correct official Waveshare 1024x600 example. Done.
+3. Display a simple image, color, or test pattern on the LCD. In progress on `lcd-color-test`.
 4. Bring up capacitive touch input.
 5. Add LVGL.
 6. Build the Casio F-91W-inspired clock UI.

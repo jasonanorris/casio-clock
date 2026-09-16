@@ -10,7 +10,7 @@ Project path:
 /home/mint/projects/casio-clock
 ```
 
-The current milestone is a minimal serial hardware sanity test. Do not implement the clock UI yet.
+The current milestone is LCD color-bar bring-up. Do not implement the clock UI yet.
 
 ## Target Hardware
 
@@ -42,7 +42,7 @@ Preferred stack:
 - Git
 - LVGL later, after basic board bring-up
 
-Do not add LVGL, display drivers, touch drivers, or Waveshare libraries until a milestone actually needs them.
+Do not add LVGL, touch handling, or unrelated Waveshare libraries until a milestone actually needs them.
 
 ## Current PlatformIO Baseline
 
@@ -58,6 +58,16 @@ Required board-level configuration is kept in `platformio.ini`:
 - upload and monitor ports are passed on the command line instead of fixed in `platformio.ini`
 
 Keep hardware-specific settings isolated in `platformio.ini`, `boards/waveshare_esp32_s3_touch_lcd_5b.json`, and `include/hardware_config.h`.
+
+The `lcd-color-test` branch vendors the official Waveshare-bundled Arduino display libraries under `lib/` for deterministic LCD bring-up:
+
+- `ESP32_Display_Panel` 1.0.0
+- `ESP32_IO_Expander` 1.0.1
+- `esp-lib-utils` 0.1.2
+
+The current LCD test code lives in `src/lcd_color_test.cpp` and uses the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` timing/pin data plus CH422G LCD reset/backlight pins. Do not replace these with 800x480 settings.
+
+The vendored `ESP32_Display_Panel` driver selection is deliberately configured in `lib/ESP32_Display_Panel/esp_panel_drivers_conf.h` to enable the RGB bus, ST7262 LCD driver, and CH422G IO expander. Without this, the RGB bus factory may log `Disabled or unsupported type: 2(RGB)` and LCD initialization will fail.
 
 ## Development Commands
 
@@ -95,9 +105,9 @@ If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload o
 
 ## Milestones
 
-1. Minimal serial test that prints chip, flash, PSRAM, heap, and heartbeat information.
-2. Find and verify the correct official Waveshare 1024x600 example.
-3. Display a simple image, color, or test pattern on the LCD.
+1. Minimal serial test that prints chip, flash, PSRAM, heap, and heartbeat information. Done.
+2. Find and verify the correct official Waveshare 1024x600 example. Done.
+3. Display a simple image, color, or test pattern on the LCD. In progress.
 4. Add touch input.
 5. Add LVGL.
 6. Build the clock UI.

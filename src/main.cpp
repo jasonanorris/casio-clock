@@ -3,6 +3,7 @@
 #include <esp_chip_info.h>
 
 #include "hardware_config.h"
+#include "lcd_color_test.h"
 
 namespace {
 uint32_t heartbeatCount = 0;
@@ -57,7 +58,7 @@ void printStartupBanner() {
   printMemoryInfo();
 
   Serial.println();
-  Serial.println("Heartbeat starting.");
+  Serial.println("Starting LCD color-bar test.");
 }
 }  // namespace
 
@@ -65,6 +66,9 @@ void setup() {
   Serial.begin(HardwareConfig::SerialBaud);
   delay(1500);
   printStartupBanner();
+  runLcdColorTest();
+  Serial.println();
+  Serial.println("Heartbeat starting.");
 }
 
 void loop() {
