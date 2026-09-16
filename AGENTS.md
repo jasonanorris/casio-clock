@@ -10,7 +10,7 @@ Project path:
 /home/mint/projects/casio-clock
 ```
 
-The current milestone is capacitive touch serial bring-up on top of the verified LCD color-bar test. Do not implement the clock UI yet.
+The current milestone is capacitive touch serial bring-up, verified on the physical display. Do not implement the clock UI yet.
 
 ## Target Hardware
 
@@ -71,7 +71,7 @@ The vendored `ESP32_Display_Panel` driver selection is deliberately configured i
 
 The first visible color-bar test reported about 24 FPS over the refresh callback, matching the current 21 MHz pixel clock and official porch timing. Some visible flicker is expected until display timing/buffering is tuned with verified 1024x600 references.
 
-The touch serial test lives in `src/touch_serial_test.cpp`. It uses official 5B values: GT911 over I2C SDA GPIO 8/SCL GPIO 9 at address `0x5D`, interrupt GPIO 4, and reset through CH422G EXIO1. Keep it serial-only until touch coordinates are verified on hardware.
+The touch serial test lives in `src/touch_serial_test.cpp`. It uses official 5B values: GT911 over I2C SDA GPIO 8/SCL GPIO 9 at address `0x5D`, interrupt GPIO 4, and reset through CH422G EXIO1. Hardware has printed touch coordinates and release events successfully.
 
 ## Development Commands
 
@@ -112,7 +112,7 @@ If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload o
 1. Minimal serial test that prints chip, flash, PSRAM, heap, and heartbeat information. Done.
 2. Find and verify the correct official Waveshare 1024x600 example. Done.
 3. Display a simple image, color, or test pattern on the LCD. Done.
-4. Add touch input. In progress.
+4. Add touch input. Done.
 5. Add LVGL.
 6. Build the clock UI.
 7. Add Wi-Fi/NTP time synchronization.

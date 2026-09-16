@@ -31,7 +31,7 @@ PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio`
 
 ## Current Project Status
 
-Current milestone: capacitive touch serial bring-up on top of the verified LCD color-bar test.
+Current milestone: capacitive touch serial bring-up verified on the physical display.
 
 The firmware:
 
@@ -84,6 +84,8 @@ The touch serial test uses the official 5B touch details:
 - interrupt GPIO 4
 - reset through CH422G EXIO1
 
+Hardware verification: the board successfully prints GT911 touch coordinates and release events over serial while the LCD color bars remain visible.
+
 ## Build
 
 ```bash
@@ -133,7 +135,7 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 1. Build and upload the minimal serial sanity test. Done.
 2. Find and verify the correct official Waveshare 1024x600 example. Done.
 3. Display a simple image, color, or test pattern on the LCD. Done on `lcd-color-test`.
-4. Bring up capacitive touch input. In progress on `lcd-color-test`.
+4. Bring up capacitive touch input. Done on `lcd-color-test`.
 5. Add LVGL.
 6. Build the Casio F-91W-inspired clock UI.
 7. Add Wi-Fi/NTP time synchronization.
