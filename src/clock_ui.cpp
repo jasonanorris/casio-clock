@@ -131,7 +131,12 @@ void refreshClock() {
   const unsigned long seconds = totalSeconds % 60;
   const unsigned long displayHour =
       use24Hour ? hours : ((hours % 12) == 0 ? 12 : hours % 12);
-  setSevenSegmentDigit(timeDigits[0], displayHour / 10);
+  if (displayHour < 10) {
+    lv_obj_add_flag(timeDigits[0].root, LV_OBJ_FLAG_HIDDEN);
+  } else {
+    lv_obj_clear_flag(timeDigits[0].root, LV_OBJ_FLAG_HIDDEN);
+    setSevenSegmentDigit(timeDigits[0], displayHour / 10);
+  }
   setSevenSegmentDigit(timeDigits[1], displayHour % 10);
   setSevenSegmentDigit(timeDigits[2], minutes / 10);
   setSevenSegmentDigit(timeDigits[3], minutes % 10);
