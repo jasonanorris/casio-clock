@@ -77,6 +77,8 @@ The LVGL bring-up test lives in `src/lvgl_bringup.cpp` and uses `include/lv_conf
 
 The `clock-prototype` branch currently uses `millis()` as a temporary timebase and displays elapsed time from boot. It includes the first F-91W-inspired face, a touch-controlled simulated illuminator, and a settings overlay opened by an invisible 200x200 upper-right hotspot. The display defaults to 12-hour time and can be switched between 12-hour and 24-hour formats in Settings. Manual time and format settings are volatile and reset after reboot. Keep this menu extensible for later settings. Do not add Wi-Fi, NTP, RTC, or settings persistence unless explicitly asked.
 
+Settings also allows month, day, and weekday adjustment. The temporary calendar advances at midnight using normal month lengths and does not yet handle leap years. Date settings reset after reboot.
+
 Keep UI rendering, settings interactions, and temporary clock state in `src/clock_ui.cpp`. Keep `src/lvgl_bringup.cpp` focused on the verified 1024x600 LCD, GT911 touch, and LVGL driver plumbing.
 
 ## Development Commands

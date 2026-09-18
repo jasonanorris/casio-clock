@@ -50,9 +50,10 @@ The firmware:
 - opens a settings menu from an invisible 200x200 hotspot in the upper-right corner
 - allows the temporary local clock time to be adjusted by hour and minute
 - supports 12-hour and 24-hour display formats, defaulting to 12-hour
+- allows month, day, and weekday to be adjusted in Settings
 - prints a heartbeat once per second
 
-It does not initialize Wi-Fi, RTC, NTP, or persistent settings yet. The displayed time and calendar indicators are derived from elapsed time since boot using `millis()`. A manually set time and the selected 12/24-hour format last only until reboot.
+It does not initialize Wi-Fi, RTC, NTP, or persistent settings yet. The displayed time and calendar advance locally using `millis()`. Manually set time, date, weekday, and format last only until reboot. The prototype calendar uses normal month lengths without leap-year handling.
 
 The initial LCD test showed an observed refresh callback rate of about 24 FPS, which matches the 21 MHz pixel clock and official porch timing currently in use. Some visible flicker may be expected at this bring-up stage.
 

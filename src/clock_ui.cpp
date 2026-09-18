@@ -20,6 +20,9 @@ lv_obj_t *editPeriodButton = nullptr;
 lv_obj_t *editPeriodLabel = nullptr;
 lv_obj_t *format12Button = nullptr;
 lv_obj_t *format24Button = nullptr;
+lv_obj_t *editMonthLabel = nullptr;
+lv_obj_t *editDayLabel = nullptr;
+lv_obj_t *editWeekdayLabel = nullptr;
 
 unsigned long clockBaseMillis = 0;
 unsigned long clockBaseSeconds = 0;
@@ -28,6 +31,13 @@ uint8_t editMinute = 0;
 bool illuminatorOn = false;
 bool use24Hour = false;
 bool editUse24Hour = false;
+uint8_t calendarMonth = 1;
+uint8_t calendarDay = 1;
+uint8_t calendarWeekday = 0;
+unsigned long calendarBaseDay = 0;
+uint8_t editMonth = 1;
+uint8_t editDay = 1;
+uint8_t editWeekday = 0;
 
 enum class TimeMenuAction : intptr_t {
   HourDown,
@@ -37,9 +47,36 @@ enum class TimeMenuAction : intptr_t {
   TogglePeriod,
   Format12,
   Format24,
+  MonthNext,
+  DayNext,
+  WeekdayNext,
   Cancel,
   Save,
 };
+
+constexpr const char *Weekdays[] = {"SUN", "MON", "TUE", "WED",
+                                     "THU", "FRI", "SAT"};
+
+uint8_t daysInMonth(uint8_t month) {
+  static constexpr uint8_t Days[] = {31, 28, 31, 30, 31, 30,
+                                     31, 31, 30, 31, 30, 31};
+  return Days[month - 1];
+}
+
+void getCurrentDate(unsigned long currentDay, uint8_t &month, uint8_t &day,
+                    uint8_t &weekday) {
+  month = calendarMonth;
+  day = calendarDay;
+  weekday = calendarWeekday;
+  unsigned long daysToAdvance = currentDay - calendarBaseDay;
+  while (daysToAdvance-- > 0) {
+    weekday = (weekday + 1) % 7;
+    if (++day > daysInMonth(month)) {
+      day = 1;
+      month = (month % 12) + 1;
+    }
+  }
+}
 
 lv_obj_t *createLabel(lv_obj_t *parent, const char *text,
                       const lv_font_t *font, uint32_t color) {
@@ -73,11 +110,14 @@ void refreshClock() {
   }
 
   lv_label_set_text(modeLabel, use24Hour ? "24H" : "12H");
-  static constexpr const char *Weekdays[] = {"SUN", "MON", "TUE", "WED",
-                                              "THU", "FRI", "SAT"};
   const unsigned long elapsedDays = totalSeconds / (24UL * 60UL * 60UL);
-  lv_label_set_text(dayLabel, Weekdays[elapsedDays % 7]);
-  lv_label_set_text_fmt(dateLabel, "1-%02lu", (elapsedDays % 31) + 1);
+  uint8_t month;
+  uint8_t day;
+  uint8_t weekday;
+  getCurrentDate(elapsedDays, month, day, weekday);
+  lv_label_set_text(dayLabel, Weekdays[weekday]);
+  lv_label_set_text_fmt(dateLabel, "%u-%02u", static_cast<unsigned>(month),
+                        static_cast<unsigned>(day));
 }
 
 void onScreenPressed(lv_event_t *event) {
@@ -104,6 +144,9 @@ void closeConfigMenu() {
   editPeriodLabel = nullptr;
   format12Button = nullptr;
   format24Button = nullptr;
+  editMonthLabel = nullptr;
+  editDayLabel = nullptr;
+  editWeekdayLabel = nullptr;
 }
 
 void updateTimeEditor() {
@@ -126,6 +169,11 @@ void updateTimeEditor() {
   lv_obj_set_style_bg_color(format24Button,
                             lv_color_hex(editUse24Hour ? 0x287C8D : 0x34383C),
                             0);
+  lv_label_set_text_fmt(editMonthLabel, "MONTH %u",
+                        static_cast<unsigned>(editMonth));
+  lv_label_set_text_fmt(editDayLabel, "DAY %02u",
+                        static_cast<unsigned>(editDay));
+  lv_label_set_text(editWeekdayLabel, Weekdays[editWeekday]);
 }
 
 void onTimeMenuAction(lv_event_t *event) {
@@ -157,6 +205,16 @@ void onTimeMenuAction(lv_event_t *event) {
     case TimeMenuAction::Format24:
       editUse24Hour = true;
       break;
+    case TimeMenuAction::MonthNext:
+      editMonth = (editMonth % 12) + 1;
+      if (editDay > daysInMonth(editMonth)) editDay = daysInMonth(editMonth);
+      break;
+    case TimeMenuAction::DayNext:
+      editDay = (editDay % daysInMonth(editMonth)) + 1;
+      break;
+    case TimeMenuAction::WeekdayNext:
+      editWeekday = (editWeekday + 1) % 7;
+      break;
     case TimeMenuAction::Cancel:
       closeConfigMenu();
       return;
@@ -168,6 +226,10 @@ void onTimeMenuAction(lv_event_t *event) {
                          static_cast<unsigned long>(editMinute) * 60UL;
       clockBaseMillis = millis();
       use24Hour = editUse24Hour;
+      calendarMonth = editMonth;
+      calendarDay = editDay;
+      calendarWeekday = editWeekday;
+      calendarBaseDay = currentDays;
       refreshClock();
       closeConfigMenu();
       return;
@@ -199,6 +261,8 @@ void openConfigMenu(lv_event_t *event) {
   editHour = (totalSeconds / 3600) % 24;
   editMinute = (totalSeconds / 60) % 60;
   editUse24Hour = use24Hour;
+  const unsigned long currentDay = totalSeconds / (24UL * 60UL * 60UL);
+  getCurrentDate(currentDay, editMonth, editDay, editWeekday);
 
   configMenu = lv_obj_create(lv_scr_act());
   lv_obj_remove_style_all(configMenu);
@@ -210,7 +274,7 @@ void openConfigMenu(lv_event_t *event) {
   lv_obj_t *title = createLabel(configMenu, "SETTINGS", &lv_font_montserrat_32,
                                 0xF1F3F4);
   lv_obj_align(title, LV_ALIGN_TOP_LEFT, 72, 30);
-  lv_obj_t *section = createLabel(configMenu, "TIME FORMAT",
+  lv_obj_t *section = createLabel(configMenu, "TIME & DATE",
                                   &lv_font_montserrat_20, 0x48B8D0);
   lv_obj_align(section, LV_ALIGN_TOP_LEFT, 74, 92);
 
@@ -258,8 +322,21 @@ void openConfigMenu(lv_event_t *event) {
   lv_obj_align(minuteUp, LV_ALIGN_RIGHT_MID, -44, -5);
   editPeriodButton = createMenuButton(panel, "AM", 110, 50,
                                       TimeMenuAction::TogglePeriod);
-  lv_obj_align(editPeriodButton, LV_ALIGN_BOTTOM_MID, 0, -12);
+  lv_obj_align(editPeriodButton, LV_ALIGN_TOP_MID, 0, 12);
   editPeriodLabel = lv_obj_get_child(editPeriodButton, 0);
+
+  lv_obj_t *monthButton = createMenuButton(panel, "MONTH 1", 180, 52,
+                                           TimeMenuAction::MonthNext);
+  lv_obj_align(monthButton, LV_ALIGN_BOTTOM_LEFT, 42, -12);
+  editMonthLabel = lv_obj_get_child(monthButton, 0);
+  lv_obj_t *dayButton = createMenuButton(panel, "DAY 01", 180, 52,
+                                         TimeMenuAction::DayNext);
+  lv_obj_align(dayButton, LV_ALIGN_BOTTOM_MID, 0, -12);
+  editDayLabel = lv_obj_get_child(dayButton, 0);
+  lv_obj_t *weekdayButton = createMenuButton(panel, "SUN", 180, 52,
+                                             TimeMenuAction::WeekdayNext);
+  lv_obj_align(weekdayButton, LV_ALIGN_BOTTOM_RIGHT, -42, -12);
+  editWeekdayLabel = lv_obj_get_child(weekdayButton, 0);
 
   lv_obj_t *cancel = createMenuButton(configMenu, "CANCEL", 170, 68,
                                       TimeMenuAction::Cancel);
