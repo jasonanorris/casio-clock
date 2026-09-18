@@ -31,5 +31,8 @@ add_executable(casio-clock-sim
   ../src/weekday_segment_assets.cpp
 )
 target_compile_definitions(casio-clock-sim PRIVATE LV_CONF_INCLUDE_SIMPLE)
-target_include_directories(casio-clock-sim PRIVATE ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../src)
+target_include_directories(casio-clock-sim PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/../include
+  ${CMAKE_CURRENT_SOURCE_DIR}/../src)
 target_link_libraries(casio-clock-sim PRIVATE lvgl lv_drivers PkgConfig::SDL2)

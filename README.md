@@ -49,6 +49,8 @@ The firmware:
 - initializes the GT911 capacitive touch controller using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` touch data
 - routes touch input into LVGL and toggles the simulated LCD illuminator when pressed
 - opens a settings menu from an invisible 200x200 hotspot in the upper-right corner
+- opens a dark bouncing-time screensaver from an invisible 200x200 hotspot in
+  the upper-left corner; tap the screensaver to return to the clock
 - allows the temporary local clock time to be adjusted by hour and minute
 - supports 12-hour and 24-hour display formats, defaulting to 12-hour
 - allows month, day, and weekday to be adjusted in Settings
@@ -116,7 +118,19 @@ The `clock-prototype` branch now contains the first watch-face layout. This is s
 
 UI code and temporary clock state live in `src/clock_ui.cpp`. The verified RGB panel, GT911 touch, and LVGL driver integration remain isolated in `src/lvgl_bringup.cpp`.
 
-The Settings overlay is assembled while hidden and revealed only after all controls are ready, avoiding visible incremental redraws on the RGB panel.
+The Settings and screensaver overlays are assembled while hidden and revealed
+only after their contents are ready, avoiding visible incremental redraws on
+the RGB panel. The screensaver shows only `H:MM` in light gray and moves slowly
+around the dark display, reversing direction at each edge.
+
+Automatic sleep-mode defaults are configured in `include/clock_config.h`.
+Start and end times use local 24-hour `HH:MM` format with leading zeroes, such
+as `22:00` and `07:00`; overnight windows are supported. Automatic sleep mode
+is disabled by default. The Settings overlay has separate `TIME & DATE` and
+`SCREENSAVER` pages. The Screensaver page can enable sleep mode and edit start
+and end times in five-minute steps. Saved values are persisted in ESP32 NVS and
+override the compile-time defaults. A scheduled screensaver can be dismissed by
+tapping it and remains dismissed until the configured sleep window ends.
 
 LVGL uses a full 1024x600 RGB565 draw buffer in PSRAM so full-screen transitions flush as one frame instead of visible 40-row bands. If that allocation fails, firmware falls back to the smaller partial buffer and continues running.
 

@@ -121,7 +121,15 @@ for `M` and `W`. Regenerate `src/weekday_segment_assets.*` with
 The full Waveshare 1024x600 screen represents only the watch LCD. Do not add a
 simulated watch bezel, case, branding, instructions, source/status labels, or
 other text around the clock face. The Settings overlay remains intentionally
-separate and is opened through the invisible upper-right hotspot.
+separate and is opened through the invisible upper-right hotspot. An invisible
+200x200 upper-left hotspot opens a dark screensaver with a slowly bouncing
+light-gray `H:MM` time; tapping the screensaver closes it.
+
+Automatic screensaver defaults are configured in `include/clock_config.h`.
+Sleep-mode start and end values use local 24-hour `HH:MM` strings and support
+overnight windows. The Settings overlay has `TIME & DATE` and `SCREENSAVER`
+pages; saved sleep-mode values persist in NVS and override compile-time
+defaults. Keep schedule configuration separate from hardware settings.
 
 Simulator build and run:
 
