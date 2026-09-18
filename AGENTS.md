@@ -97,6 +97,40 @@ Hardware verification: manual RTC values and the 12/24-hour preference survived 
 
 ## Development Commands
 
+The optional desktop simulator in `simulator/` renders the shared
+`src/clock_ui.cpp` at 1024x600 with SDL2. Keep board-independent UI code behind
+`src/clock_platform.h`; hardware behavior belongs in `src/clock_platform.cpp`
+and desktop behavior in `simulator/clock_platform_sim.cpp`. The simulator does
+not validate RGB timing, GT911 touch, RTC, or Wi-Fi behavior.
+
+The LCD clock digits are implemented by the shared `src/seven_segment.*`
+component. Preserve the reference layout: large hours/minutes, smaller seconds,
+two-dot colon, upper-left `AM`/`PM` or `24H`, centered two-letter weekday, and
+SVG-derived day-of-month digits at upper-right.
+
+Digit silhouettes are sourced from
+`assets/neat-luulia-densor-8-filled.svg`. Do not hand-edit the generated
+`src/seven_segment_assets.*` files; regenerate them with
+`python3 tools/generate_segment_assets.py` after changing the source SVG.
+
+Weekday letters use the nine-segment
+`assets/neat-luulia-densor-9-filled.svg`, including two center vertical legs
+for `M` and `W`. Regenerate `src/weekday_segment_assets.*` with
+`python3 tools/generate_weekday_assets.py`; do not hand-edit generated assets.
+
+The full Waveshare 1024x600 screen represents only the watch LCD. Do not add a
+simulated watch bezel, case, branding, instructions, source/status labels, or
+other text around the clock face. The Settings overlay remains intentionally
+separate and is opened through the invisible upper-right hotspot.
+
+Simulator build and run:
+
+```bash
+cmake -S simulator -B simulator/build
+cmake --build simulator/build --target casio-clock-sim -j
+./simulator/build/casio-clock-sim
+```
+
 Build:
 
 ```bash

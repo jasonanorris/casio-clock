@@ -1,21 +1,17 @@
 #include "clock_ui.h"
 
-#include <Arduino.h>
-#include <Preferences.h>
 #include <lvgl.h>
 
-#include "rtc_time.h"
+#include "clock_platform.h"
+#include "seven_segment.h"
+#include "weekday_segment.h"
 
 namespace {
 constexpr int ScreenWidth = 1024;
 constexpr int ScreenHeight = 600;
 
-lv_obj_t *statusLabel = nullptr;
-lv_obj_t *timeLabel = nullptr;
-lv_obj_t *dayLabel = nullptr;
-lv_obj_t *dateLabel = nullptr;
 lv_obj_t *modeLabel = nullptr;
-lv_obj_t *timeSourceLabel = nullptr;
+lv_obj_t *modeBoldLabel = nullptr;
 lv_obj_t *lcdPanel = nullptr;
 lv_obj_t *configMenu = nullptr;
 lv_obj_t *editHourLabel = nullptr;
@@ -28,6 +24,10 @@ lv_obj_t *editMonthLabel = nullptr;
 lv_obj_t *editDayLabel = nullptr;
 lv_obj_t *editWeekdayLabel = nullptr;
 lv_obj_t *editYearLabel = nullptr;
+SevenSegmentDigit timeDigits[4];
+SevenSegmentDigit secondDigits[2];
+SevenSegmentDigit dateDigits[2];
+WeekdaySegmentGlyph weekdayGlyphs[2];
 
 unsigned long clockBaseMillis = 0;
 unsigned long clockBaseSeconds = 0;
@@ -64,6 +64,8 @@ enum class TimeMenuAction : intptr_t {
 
 constexpr const char *Weekdays[] = {"SUN", "MON", "TUE", "WED",
                                      "THU", "FRI", "SAT"};
+constexpr const char *LcdWeekdays[] = {"SU", "MO", "TU", "WE",
+                                       "TH", "FR", "SA"};
 
 uint8_t daysInMonth(uint8_t month, uint16_t year) {
   static constexpr uint8_t Days[] = {31, 28, 31, 30, 31, 30,
@@ -102,12 +104,24 @@ lv_obj_t *createLabel(lv_obj_t *parent, const char *text,
   return label;
 }
 
+lv_obj_t *createLcdDot(lv_obj_t *parent, int x, int y, int size) {
+  lv_obj_t *dot = lv_obj_create(parent);
+  lv_obj_remove_style_all(dot);
+  lv_obj_set_pos(dot, x, y);
+  lv_obj_set_size(dot, size, size);
+  lv_obj_set_style_bg_color(dot, lv_color_hex(0x263129), 0);
+  lv_obj_set_style_bg_opa(dot, LV_OPA_90, 0);
+  lv_obj_set_style_radius(dot, LV_RADIUS_CIRCLE, 0);
+  lv_obj_clear_flag(dot, LV_OBJ_FLAG_CLICKABLE);
+  return dot;
+}
+
 unsigned long getClockSeconds() {
-  return clockBaseSeconds + ((millis() - clockBaseMillis) / 1000);
+  return clockBaseSeconds + ((clockPlatformMillis() - clockBaseMillis) / 1000);
 }
 
 void refreshClock() {
-  if (timeLabel == nullptr) {
+  if (timeDigits[0].root == nullptr) {
     return;
   }
 
@@ -115,25 +129,27 @@ void refreshClock() {
   const unsigned long hours = (totalSeconds / 3600) % 24;
   const unsigned long minutes = (totalSeconds / 60) % 60;
   const unsigned long seconds = totalSeconds % 60;
-  if (use24Hour) {
-    lv_label_set_text_fmt(timeLabel, "%02lu:%02lu:%02lu", hours, minutes,
-                          seconds);
-  } else {
-    const unsigned long displayHour = (hours % 12) == 0 ? 12 : hours % 12;
-    lv_label_set_text_fmt(timeLabel, "%02lu:%02lu:%02lu %s", displayHour,
-                          minutes, seconds, hours < 12 ? "AM" : "PM");
-  }
-
-  lv_label_set_text(modeLabel, use24Hour ? "24H" : "12H");
+  const unsigned long displayHour =
+      use24Hour ? hours : ((hours % 12) == 0 ? 12 : hours % 12);
+  setSevenSegmentDigit(timeDigits[0], displayHour / 10);
+  setSevenSegmentDigit(timeDigits[1], displayHour % 10);
+  setSevenSegmentDigit(timeDigits[2], minutes / 10);
+  setSevenSegmentDigit(timeDigits[3], minutes % 10);
+  setSevenSegmentDigit(secondDigits[0], seconds / 10);
+  setSevenSegmentDigit(secondDigits[1], seconds % 10);
+  const char *modeText = use24Hour ? "24H" : (hours < 12 ? "AM" : "PM");
+  lv_label_set_text(modeLabel, modeText);
+  lv_label_set_text(modeBoldLabel, modeText);
   const unsigned long elapsedDays = totalSeconds / (24UL * 60UL * 60UL);
   uint8_t month;
   uint8_t day;
   uint8_t weekday;
   uint16_t year;
   getCurrentDate(elapsedDays, month, day, weekday, year);
-  lv_label_set_text(dayLabel, Weekdays[weekday]);
-  lv_label_set_text_fmt(dateLabel, "%u-%02u", static_cast<unsigned>(month),
-                        static_cast<unsigned>(day));
+  setWeekdaySegmentGlyph(weekdayGlyphs[0], LcdWeekdays[weekday][0]);
+  setWeekdaySegmentGlyph(weekdayGlyphs[1], LcdWeekdays[weekday][1]);
+  setSevenSegmentDigit(dateDigits[0], day / 10);
+  setSevenSegmentDigit(dateDigits[1], day % 10);
 }
 
 void onScreenPressed(lv_event_t *event) {
@@ -143,9 +159,7 @@ void onScreenPressed(lv_event_t *event) {
 
   illuminatorOn = !illuminatorOn;
   lv_obj_set_style_bg_color(
-      lcdPanel, lv_color_hex(illuminatorOn ? 0xDCECA8 : 0xA8B58A), 0);
-  lv_label_set_text(statusLabel,
-                    illuminatorOn ? "ILLUMINATOR ON" : "TOUCH FOR LIGHT");
+      lcdPanel, lv_color_hex(illuminatorOn ? 0xE3F0B5 : 0xB9C1A5), 0);
 }
 
 void closeConfigMenu() {
@@ -251,7 +265,7 @@ void onTimeMenuAction(lv_event_t *event) {
       clockBaseSeconds = currentDays * 24UL * 60UL * 60UL +
                          static_cast<unsigned long>(editHour) * 60UL * 60UL +
                          static_cast<unsigned long>(editMinute) * 60UL;
-      clockBaseMillis = millis();
+      clockBaseMillis = clockPlatformMillis();
       use24Hour = editUse24Hour;
       calendarMonth = editMonth;
       calendarDay = editDay;
@@ -259,11 +273,7 @@ void onTimeMenuAction(lv_event_t *event) {
       calendarYear = editYear;
       calendarBaseDay = currentDays;
 
-      Preferences preferences;
-      if (preferences.begin("casio-clock", false)) {
-        preferences.putBool("use24", use24Hour);
-        preferences.end();
-      }
+      clockPlatformSaveUse24Hour(use24Hour);
 
       tm manualTime = {};
       manualTime.tm_year = editYear - 1900;
@@ -273,9 +283,7 @@ void onTimeMenuAction(lv_event_t *event) {
       manualTime.tm_hour = editHour;
       manualTime.tm_min = editMinute;
       manualTime.tm_sec = 0;
-      if (writeRtcDateTime(manualTime)) {
-        setClockUiTimeSource("RTC / MANUAL");
-      }
+      clockPlatformWriteRtc(manualTime);
       refreshClock();
       closeConfigMenu();
       return;
@@ -402,70 +410,50 @@ void openConfigMenu(lv_event_t *event) {
 }  // namespace
 
 void createClockUi() {
-  Preferences preferences;
-  if (preferences.begin("casio-clock", true)) {
-    use24Hour = preferences.getBool("use24", false);
-    preferences.end();
-  }
+  use24Hour = clockPlatformLoadUse24Hour();
 
   lv_obj_t *screen = lv_scr_act();
-  lv_obj_set_style_bg_color(screen, lv_color_hex(0x17191B), 0);
+  lv_obj_set_style_bg_color(screen, lv_color_hex(0xB9C1A5), 0);
   lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, 0);
   lv_obj_add_event_cb(screen, onScreenPressed, LV_EVENT_PRESSED, nullptr);
 
-  lv_obj_t *bezel = lv_obj_create(screen);
-  lv_obj_remove_style_all(bezel);
-  lv_obj_set_size(bezel, 860, 510);
-  lv_obj_center(bezel);
-  lv_obj_set_style_bg_color(bezel, lv_color_hex(0x303338), 0);
-  lv_obj_set_style_bg_opa(bezel, LV_OPA_COVER, 0);
-  lv_obj_set_style_border_color(bezel, lv_color_hex(0x858A8D), 0);
-  lv_obj_set_style_border_width(bezel, 8, 0);
-  lv_obj_set_style_radius(bezel, 22, 0);
-  lv_obj_clear_flag(bezel, LV_OBJ_FLAG_CLICKABLE);
-
-  lv_obj_t *brand = createLabel(bezel, "DIGITAL", &lv_font_montserrat_20,
-                                0xE5E7E8);
-  lv_obj_align(brand, LV_ALIGN_TOP_MID, 0, 22);
-  lv_obj_t *waterResist = createLabel(bezel, "WATER RESIST",
-                                      &lv_font_montserrat_14, 0x48B8D0);
-  lv_obj_align(waterResist, LV_ALIGN_TOP_LEFT, 86, 63);
-  lv_obj_t *alarm = createLabel(bezel, "ALARM  CHRONOGRAPH",
-                                &lv_font_montserrat_14, 0xD86A62);
-  lv_obj_align(alarm, LV_ALIGN_TOP_RIGHT, -86, 63);
-
-  lv_obj_t *accent = lv_obj_create(bezel);
-  lv_obj_remove_style_all(accent);
-  lv_obj_set_size(accent, 680, 4);
-  lv_obj_align(accent, LV_ALIGN_TOP_MID, 0, 88);
-  lv_obj_set_style_bg_color(accent, lv_color_hex(0xB94745), 0);
-  lv_obj_set_style_bg_opa(accent, LV_OPA_COVER, 0);
-
-  lcdPanel = lv_obj_create(bezel);
+  lcdPanel = lv_obj_create(screen);
   lv_obj_remove_style_all(lcdPanel);
-  lv_obj_set_size(lcdPanel, 710, 280);
-  lv_obj_align(lcdPanel, LV_ALIGN_CENTER, 0, 18);
-  lv_obj_set_style_bg_color(lcdPanel, lv_color_hex(0xA8B58A), 0);
+  lv_obj_set_size(lcdPanel, ScreenWidth, ScreenHeight);
+  lv_obj_align(lcdPanel, LV_ALIGN_CENTER, 0, 0);
+  lv_obj_set_style_bg_color(lcdPanel, lv_color_hex(0xB9C1A5), 0);
   lv_obj_set_style_bg_opa(lcdPanel, LV_OPA_COVER, 0);
-  lv_obj_set_style_border_color(lcdPanel, lv_color_hex(0x111512), 0);
-  lv_obj_set_style_border_width(lcdPanel, 12, 0);
-  lv_obj_set_style_radius(lcdPanel, 5, 0);
+  lv_obj_clear_flag(lcdPanel, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_clear_flag(lcdPanel, LV_OBJ_FLAG_CLICKABLE);
 
-  dayLabel = createLabel(lcdPanel, "SUN", &lv_font_montserrat_20, 0x20271D);
-  lv_obj_align(dayLabel, LV_ALIGN_TOP_LEFT, 34, 28);
-  dateLabel = createLabel(lcdPanel, "1-01", &lv_font_montserrat_20, 0x20271D);
-  lv_obj_align(dateLabel, LV_ALIGN_TOP_RIGHT, -34, 28);
-  modeLabel = createLabel(lcdPanel, "12H", &lv_font_montserrat_14, 0x20271D);
-  lv_obj_align(modeLabel, LV_ALIGN_TOP_MID, 0, 32);
-  timeLabel = createLabel(lcdPanel, "00:00:00", &lv_font_montserrat_48,
-                          0x151B14);
-  lv_obj_align(timeLabel, LV_ALIGN_CENTER, 0, 24);
-  timeSourceLabel = createLabel(lcdPanel, "BOOT TIME", &lv_font_montserrat_14,
-                                0x30382B);
-  lv_obj_align(timeSourceLabel, LV_ALIGN_BOTTOM_MID, 0, -24);
-  statusLabel = createLabel(bezel, "TOUCH FOR LIGHT", &lv_font_montserrat_14,
-                            0xD2D5D6);
-  lv_obj_align(statusLabel, LV_ALIGN_BOTTOM_MID, 0, -25);
+  modeLabel = createLabel(lcdPanel, "AM", &lv_font_montserrat_48, 0x202821);
+  lv_obj_align(modeLabel, LV_ALIGN_TOP_LEFT, 44, 92);
+  modeBoldLabel =
+      createLabel(lcdPanel, "AM", &lv_font_montserrat_48, 0x202821);
+  lv_obj_align(modeBoldLabel, LV_ALIGN_TOP_LEFT, 46, 92);
+  constexpr uint32_t SegmentColor = 0x202821;
+  createWeekdaySegmentGlyph(weekdayGlyphs[0], lcdPanel, 347, 34,
+                            SegmentColor);
+  createWeekdaySegmentGlyph(weekdayGlyphs[1], lcdPanel, 415, 34,
+                            SegmentColor);
+  createSevenSegmentDigit(dateDigits[0], lcdPanel, 868, 34, 60, 104,
+                          SevenSegmentProfile::Top, SegmentColor);
+  createSevenSegmentDigit(dateDigits[1], lcdPanel, 936, 34, 60, 104,
+                          SevenSegmentProfile::Top, SegmentColor);
+  createSevenSegmentDigit(timeDigits[0], lcdPanel, 34, 205, 148, 342,
+                          SevenSegmentProfile::Large, SegmentColor);
+  createSevenSegmentDigit(timeDigits[1], lcdPanel, 184, 205, 148, 342,
+                          SevenSegmentProfile::Large, SegmentColor);
+  createLcdDot(lcdPanel, 356, 302, 34);
+  createLcdDot(lcdPanel, 351, 420, 34);
+  createSevenSegmentDigit(timeDigits[2], lcdPanel, 404, 205, 148, 342,
+                          SevenSegmentProfile::Large, SegmentColor);
+  createSevenSegmentDigit(timeDigits[3], lcdPanel, 554, 205, 148, 342,
+                          SevenSegmentProfile::Large, SegmentColor);
+  createSevenSegmentDigit(secondDigits[0], lcdPanel, 750, 326, 112, 221,
+                          SevenSegmentProfile::Small, SegmentColor);
+  createSevenSegmentDigit(secondDigits[1], lcdPanel, 870, 326, 112, 221,
+                          SevenSegmentProfile::Small, SegmentColor);
 
   lv_obj_t *settingsHotspot = lv_obj_create(screen);
   lv_obj_remove_style_all(settingsHotspot);
@@ -485,17 +473,11 @@ void setClockUiDateTime(const tm &dateTime) {
                      static_cast<unsigned long>(dateTime.tm_hour) * 3600UL +
                      static_cast<unsigned long>(dateTime.tm_min) * 60UL +
                      static_cast<unsigned long>(dateTime.tm_sec);
-  clockBaseMillis = millis();
+  clockBaseMillis = clockPlatformMillis();
   calendarMonth = dateTime.tm_mon + 1;
   calendarDay = dateTime.tm_mday;
   calendarWeekday = dateTime.tm_wday;
   calendarYear = dateTime.tm_year + 1900;
   calendarBaseDay = currentDays;
   refreshClock();
-}
-
-void setClockUiTimeSource(const char *source) {
-  if (timeSourceLabel != nullptr) {
-    lv_label_set_text(timeSourceLabel, source);
-  }
 }

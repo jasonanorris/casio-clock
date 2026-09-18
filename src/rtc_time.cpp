@@ -11,7 +11,6 @@ constexpr uint8_t RtcAddress = 0x51;
 constexpr uint8_t TimeRegister = 0x04;
 constexpr TickType_t I2cTimeout = pdMS_TO_TICKS(100);
 constexpr int YearOffset = 1970;
-bool available = false;
 
 uint8_t toBcd(uint8_t value) { return (value / 10) * 16 + (value % 10); }
 uint8_t fromBcd(uint8_t value) { return (value / 16) * 10 + (value % 16); }
@@ -73,25 +72,18 @@ bool writeRtcDateTime(const tm &dateTime) {
     Serial.printf("PCF85063 write failed: %s\n", esp_err_to_name(result));
     return false;
   }
-  available = true;
   return true;
 }
 
 bool initRtcTime() {
   tm rtcTime = {};
   if (!readRtcDateTime(rtcTime)) {
-    available = false;
-    setClockUiTimeSource("MANUAL / OFFLINE");
     return false;
   }
 
-  available = true;
   setClockUiDateTime(rtcTime);
-  setClockUiTimeSource("RTC");
   Serial.printf("RTC loaded: %04d-%02d-%02d %02d:%02d:%02d\n",
                 rtcTime.tm_year + 1900, rtcTime.tm_mon + 1, rtcTime.tm_mday,
                 rtcTime.tm_hour, rtcTime.tm_min, rtcTime.tm_sec);
   return true;
 }
-
-bool rtcTimeAvailable() { return available; }

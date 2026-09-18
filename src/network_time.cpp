@@ -32,9 +32,6 @@ void startConnection() {
   connectionStartedMs = millis();
   lastConnectionAttemptMs = connectionStartedMs;
   connecting = true;
-  if (!rtcTimeAvailable()) {
-    setClockUiTimeSource("WIFI CONNECTING");
-  }
 }
 
 void syncTime() {
@@ -48,7 +45,6 @@ void syncTime() {
   if (writeRtcDateTime(localTime)) {
     Serial.println("RTC updated from NTP");
   }
-  setClockUiTimeSource("NTP SYNC");
   lastSyncMs = millis();
   Serial.printf("NTP synchronized: %04d-%02d-%02d %02d:%02d:%02d\n",
                 localTime.tm_year + 1900, localTime.tm_mon + 1,
@@ -60,7 +56,6 @@ void syncTime() {
 void initNetworkTime() {
   if (!credentialsConfigured()) {
     Serial.println("Wi-Fi disabled: include/wifi_credentials.h is empty");
-    setClockUiTimeSource(rtcTimeAvailable() ? "RTC" : "MANUAL / OFFLINE");
     return;
   }
   startConnection();
@@ -91,7 +86,6 @@ void runNetworkTimeLoop() {
   if (connecting && now - connectionStartedMs >= ConnectTimeoutMs) {
     connecting = false;
     WiFi.disconnect();
-    setClockUiTimeSource("MANUAL / OFFLINE");
     Serial.println("Wi-Fi connection timed out; clock remains offline");
   }
   if (!connecting && now - lastConnectionAttemptMs >= RetryIntervalMs) {

@@ -26,6 +26,7 @@ Important: this is the 1024x600 `5B` model, not the 800x480 `ESP32-S3-Touch-LCD-
 - Arduino ESP32 framework
 - C/C++
 - Git
+- CMake and SDL2 for the optional desktop simulator
 
 PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio` from the project root.
 
@@ -118,6 +119,53 @@ UI code and temporary clock state live in `src/clock_ui.cpp`. The verified RGB p
 The Settings overlay is assembled while hidden and revealed only after all controls are ready, avoiding visible incremental redraws on the RGB panel.
 
 LVGL uses a full 1024x600 RGB565 draw buffer in PSRAM so full-screen transitions flush as one frame instead of visible 40-row bands. If that allocation fails, firmware falls back to the smaller partial buffer and continues running.
+
+## Desktop UI Simulator
+
+The `simulator/` target renders the same `src/clock_ui.cpp` interface in a
+1024x600 SDL2 window. Mouse input acts as touch input, including the invisible
+upper-right Settings hotspot. Hardware-only display timing, GT911, RTC, and
+Wi-Fi behavior still require testing on the board.
+
+The clock face uses a shared custom seven-segment LVGL component for the large
+hours/minutes and smaller seconds. Its layout follows the F-91W LCD references:
+`AM`/`PM` or `24H` at upper-left, two-letter weekday centered, and day of month
+at upper-right. The entire 1024x600 panel represents the LCD itself; the normal
+clock view intentionally has no simulated watch bezel, branding, status text,
+or other exterior decoration.
+
+The digit silhouettes come from
+`assets/neat-luulia-densor-8-filled.svg`. Run
+`python3 tools/generate_segment_assets.py` after changing that source to
+regenerate the cropped LVGL alpha masks in `src/seven_segment_assets.*`.
+
+The two-letter weekday uses the nine-segment source at
+`assets/neat-luulia-densor-9-filled.svg`. Its two center vertical segments form
+the middle strokes used by `M` and `W`. Regenerate its LVGL masks with
+`python3 tools/generate_weekday_assets.py`.
+
+Install the host build tools once:
+
+```bash
+sudo apt install build-essential cmake libsdl2-dev
+```
+
+Configure and build from the project root. The first configure downloads the
+pinned LVGL 8.4.0 and LVGL drivers 8.3.0 sources into the ignored build folder:
+
+```bash
+cmake -S simulator -B simulator/build
+cmake --build simulator/build --target casio-clock-sim -j
+```
+
+Run the simulator:
+
+```bash
+./simulator/build/casio-clock-sim
+```
+
+Close its window to stop it. Simulator settings last for the current process
+only and do not touch ESP32 NVS or the physical RTC.
 
 ## Build
 
