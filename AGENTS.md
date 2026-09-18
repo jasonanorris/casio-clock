@@ -75,11 +75,13 @@ The touch serial test lives in `src/touch_serial_test.cpp`. It uses official 5B 
 
 The LVGL bring-up test lives in `src/lvgl_bringup.cpp` and uses `include/lv_conf.h`. It pins `lvgl/lvgl@8.4.0` in `platformio.ini`, matching Waveshare's LVGL v8 guidance for the ESP32-S3-Touch-LCD-5 family. Hardware displayed the `LVGL OK` screen and the touch button worked.
 
-The `clock-prototype` branch currently uses `millis()` as a temporary timebase and displays elapsed time from boot. It includes the first F-91W-inspired face, a touch-controlled simulated illuminator, and a settings overlay opened by an invisible 200x200 upper-right hotspot. The display defaults to 12-hour time and can be switched between 12-hour and 24-hour formats in Settings. Manual time and format settings are volatile and reset after reboot. Keep this menu extensible for later settings. Do not add Wi-Fi, NTP, RTC, or settings persistence unless explicitly asked.
+The `clock-prototype` branch uses `millis()` as its local timebase and can synchronize from NTP over Wi-Fi. It includes the first F-91W-inspired face, a touch-controlled simulated illuminator, and a settings overlay opened by an invisible 200x200 upper-right hotspot. The display defaults to 12-hour time and can be switched between 12-hour and 24-hour formats in Settings. Manual time and format settings are volatile and reset after reboot. Keep this menu extensible for later settings. Do not add RTC or settings persistence unless explicitly asked.
 
 Settings also allows month, day, and weekday adjustment. The temporary calendar advances at midnight using normal month lengths and does not yet handle leap years. Date settings reset after reboot.
 
 Keep UI rendering, settings interactions, and temporary clock state in `src/clock_ui.cpp`. Keep `src/lvgl_bringup.cpp` focused on the verified 1024x600 LCD, GT911 touch, and LVGL driver plumbing.
+
+Wi-Fi/NTP behavior lives in `src/network_time.cpp`. Credentials live only in the gitignored `include/wifi_credentials.h`; keep `include/wifi_credentials.h.example` free of real credentials. The current timezone is Central Time with US daylight saving rules.
 
 ## Development Commands
 
@@ -124,5 +126,5 @@ If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload o
 5. Add LVGL. Done.
 6. Build first simple clock screen. Done.
 7. Build the clock UI. In progress.
-8. Add Wi-Fi/NTP time synchronization.
+8. Add Wi-Fi/NTP time synchronization. In progress.
 9. Evaluate onboard RTC and other peripherals.

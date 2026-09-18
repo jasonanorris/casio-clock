@@ -12,6 +12,7 @@ lv_obj_t *timeLabel = nullptr;
 lv_obj_t *dayLabel = nullptr;
 lv_obj_t *dateLabel = nullptr;
 lv_obj_t *modeLabel = nullptr;
+lv_obj_t *timeSourceLabel = nullptr;
 lv_obj_t *lcdPanel = nullptr;
 lv_obj_t *configMenu = nullptr;
 lv_obj_t *editHourLabel = nullptr;
@@ -402,9 +403,9 @@ void createClockUi() {
   timeLabel = createLabel(lcdPanel, "00:00:00", &lv_font_montserrat_48,
                           0x151B14);
   lv_obj_align(timeLabel, LV_ALIGN_CENTER, 0, 24);
-  lv_obj_t *timebase = createLabel(lcdPanel, "BOOT TIME",
-                                   &lv_font_montserrat_14, 0x30382B);
-  lv_obj_align(timebase, LV_ALIGN_BOTTOM_MID, 0, -24);
+  timeSourceLabel = createLabel(lcdPanel, "BOOT TIME", &lv_font_montserrat_14,
+                                0x30382B);
+  lv_obj_align(timeSourceLabel, LV_ALIGN_BOTTOM_MID, 0, -24);
   statusLabel = createLabel(bezel, "TOUCH FOR LIGHT", &lv_font_montserrat_14,
                             0xD2D5D6);
   lv_obj_align(statusLabel, LV_ALIGN_BOTTOM_MID, 0, -25);
@@ -419,3 +420,24 @@ void createClockUi() {
 }
 
 void updateClockUi() { refreshClock(); }
+
+void setClockUiDateTime(const tm &dateTime) {
+  const unsigned long currentDays =
+      getClockSeconds() / (24UL * 60UL * 60UL);
+  clockBaseSeconds = currentDays * 24UL * 60UL * 60UL +
+                     static_cast<unsigned long>(dateTime.tm_hour) * 3600UL +
+                     static_cast<unsigned long>(dateTime.tm_min) * 60UL +
+                     static_cast<unsigned long>(dateTime.tm_sec);
+  clockBaseMillis = millis();
+  calendarMonth = dateTime.tm_mon + 1;
+  calendarDay = dateTime.tm_mday;
+  calendarWeekday = dateTime.tm_wday;
+  calendarBaseDay = currentDays;
+  refreshClock();
+}
+
+void setClockUiTimeSource(const char *source) {
+  if (timeSourceLabel != nullptr) {
+    lv_label_set_text(timeSourceLabel, source);
+  }
+}

@@ -4,6 +4,7 @@
 
 #include "hardware_config.h"
 #include "lvgl_bringup.h"
+#include "network_time.h"
 
 namespace {
 uint32_t heartbeatCount = 0;
@@ -68,12 +69,14 @@ void setup() {
   delay(1500);
   printStartupBanner();
   initLvglBringup();
+  initNetworkTime();
   Serial.println();
   Serial.println("Heartbeat starting.");
 }
 
 void loop() {
   runLvglBringupLoop();
+  runNetworkTimeLoop();
 
   const unsigned long now = millis();
   if (now - lastHeartbeatMs >= 1000) {

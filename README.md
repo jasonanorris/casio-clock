@@ -53,7 +53,13 @@ The firmware:
 - allows month, day, and weekday to be adjusted in Settings
 - prints a heartbeat once per second
 
-It does not initialize Wi-Fi, RTC, NTP, or persistent settings yet. The displayed time and calendar advance locally using `millis()`. Manually set time, date, weekday, and format last only until reboot. The prototype calendar uses normal month lengths without leap-year handling.
+The firmware can connect to Wi-Fi and synchronize from NTP when local credentials are configured. It uses the `America/Chicago` Central Time rules, including daylight saving time. If Wi-Fi or NTP is unavailable, the displayed time and calendar continue locally using `millis()` and the manual settings remain available. Manual settings are not yet persisted across reboot.
+
+## Wi-Fi Credentials
+
+Copy the structure from `include/wifi_credentials.h.example` into the gitignored `include/wifi_credentials.h`, then set `Ssid` and `Password`. An empty local credentials file is created during initial setup so the project builds in offline mode without exposing credentials.
+
+Never commit `include/wifi_credentials.h`. The file is explicitly ignored by Git.
 
 The initial LCD test showed an observed refresh callback rate of about 24 FPS, which matches the 21 MHz pixel clock and official porch timing currently in use. Some visible flicker may be expected at this bring-up stage.
 
@@ -154,7 +160,7 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 5. Add LVGL. Done on `lvgl-bringup`.
 6. Build first simple clock screen. Done on `clock-prototype`.
 7. Build the Casio F-91W-inspired clock UI. In progress on `clock-prototype`.
-8. Add Wi-Fi/NTP time synchronization.
+8. Add Wi-Fi/NTP time synchronization. In progress on `clock-prototype`.
 9. Evaluate the onboard RTC and other peripherals.
 
 ## References
