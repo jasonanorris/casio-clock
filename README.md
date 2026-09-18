@@ -59,6 +59,10 @@ The `rtc-bringup` branch adds the onboard PCF85063ATL RTC verified from Waveshar
 
 Hardware verification: after reset with board power maintained, the display showed `RTC` before changing to `NTP SYNC`, confirming RTC read-back and subsequent network correction. A CR927 cell is still required to verify retention across complete power removal.
 
+The `settings-persistence` branch stores the 12/24-hour preference in ESP32 NVS. Settings now includes year selection from 2020 through 2069 with Gregorian leap-year handling. Saving manual time/date writes the complete value to the PCF85063 and labels the source `RTC / MANUAL`; the RTC then supplies that value after reset. Wi-Fi credentials remain in their separate gitignored header.
+
+Hardware verification: manual RTC time/date/year and the NVS-backed 12/24-hour preference survived Reset, then NTP corrected the clock normally.
+
 ## Wi-Fi Credentials
 
 Copy the structure from `include/wifi_credentials.h.example` into the gitignored `include/wifi_credentials.h`, then set `Ssid` and `Password`. An empty local credentials file is created during initial setup so the project builds in offline mode without exposing credentials.
@@ -166,6 +170,7 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 7. Build the Casio F-91W-inspired clock UI. In progress on `clock-prototype`.
 8. Add Wi-Fi/NTP time synchronization. In progress on `clock-prototype`.
 9. Evaluate the onboard RTC and other peripherals. PCF85063 bring-up verified on `rtc-bringup`; power-loss retention remains to be tested with a CR927 cell.
+10. Persist clock preferences and manual RTC settings. Done on `settings-persistence`.
 
 ## References
 

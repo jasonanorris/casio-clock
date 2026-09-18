@@ -1,7 +1,10 @@
 #include "clock_ui.h"
 
 #include <Arduino.h>
+#include <Preferences.h>
 #include <lvgl.h>
+
+#include "rtc_time.h"
 
 namespace {
 constexpr int ScreenWidth = 1024;
@@ -24,6 +27,7 @@ lv_obj_t *format24Button = nullptr;
 lv_obj_t *editMonthLabel = nullptr;
 lv_obj_t *editDayLabel = nullptr;
 lv_obj_t *editWeekdayLabel = nullptr;
+lv_obj_t *editYearLabel = nullptr;
 
 unsigned long clockBaseMillis = 0;
 unsigned long clockBaseSeconds = 0;
@@ -35,10 +39,12 @@ bool editUse24Hour = false;
 uint8_t calendarMonth = 1;
 uint8_t calendarDay = 1;
 uint8_t calendarWeekday = 0;
+uint16_t calendarYear = 2026;
 unsigned long calendarBaseDay = 0;
 uint8_t editMonth = 1;
 uint8_t editDay = 1;
 uint8_t editWeekday = 0;
+uint16_t editYear = 2026;
 
 enum class TimeMenuAction : intptr_t {
   HourDown,
@@ -51,6 +57,7 @@ enum class TimeMenuAction : intptr_t {
   MonthNext,
   DayNext,
   WeekdayNext,
+  YearNext,
   Cancel,
   Save,
 };
@@ -58,23 +65,30 @@ enum class TimeMenuAction : intptr_t {
 constexpr const char *Weekdays[] = {"SUN", "MON", "TUE", "WED",
                                      "THU", "FRI", "SAT"};
 
-uint8_t daysInMonth(uint8_t month) {
+uint8_t daysInMonth(uint8_t month, uint16_t year) {
   static constexpr uint8_t Days[] = {31, 28, 31, 30, 31, 30,
                                      31, 31, 30, 31, 30, 31};
+  if (month == 2 && ((year % 4 == 0 && year % 100 != 0) || year % 400 == 0)) {
+    return 29;
+  }
   return Days[month - 1];
 }
 
 void getCurrentDate(unsigned long currentDay, uint8_t &month, uint8_t &day,
-                    uint8_t &weekday) {
+                    uint8_t &weekday, uint16_t &year) {
   month = calendarMonth;
   day = calendarDay;
   weekday = calendarWeekday;
+  year = calendarYear;
   unsigned long daysToAdvance = currentDay - calendarBaseDay;
   while (daysToAdvance-- > 0) {
     weekday = (weekday + 1) % 7;
-    if (++day > daysInMonth(month)) {
+    if (++day > daysInMonth(month, year)) {
       day = 1;
-      month = (month % 12) + 1;
+      if (++month > 12) {
+        month = 1;
+        ++year;
+      }
     }
   }
 }
@@ -115,7 +129,8 @@ void refreshClock() {
   uint8_t month;
   uint8_t day;
   uint8_t weekday;
-  getCurrentDate(elapsedDays, month, day, weekday);
+  uint16_t year;
+  getCurrentDate(elapsedDays, month, day, weekday, year);
   lv_label_set_text(dayLabel, Weekdays[weekday]);
   lv_label_set_text_fmt(dateLabel, "%u-%02u", static_cast<unsigned>(month),
                         static_cast<unsigned>(day));
@@ -148,6 +163,7 @@ void closeConfigMenu() {
   editMonthLabel = nullptr;
   editDayLabel = nullptr;
   editWeekdayLabel = nullptr;
+  editYearLabel = nullptr;
 }
 
 void updateTimeEditor() {
@@ -175,6 +191,7 @@ void updateTimeEditor() {
   lv_label_set_text_fmt(editDayLabel, "DAY %02u",
                         static_cast<unsigned>(editDay));
   lv_label_set_text(editWeekdayLabel, Weekdays[editWeekday]);
+  lv_label_set_text_fmt(editYearLabel, "%u", static_cast<unsigned>(editYear));
 }
 
 void onTimeMenuAction(lv_event_t *event) {
@@ -208,13 +225,21 @@ void onTimeMenuAction(lv_event_t *event) {
       break;
     case TimeMenuAction::MonthNext:
       editMonth = (editMonth % 12) + 1;
-      if (editDay > daysInMonth(editMonth)) editDay = daysInMonth(editMonth);
+      if (editDay > daysInMonth(editMonth, editYear)) {
+        editDay = daysInMonth(editMonth, editYear);
+      }
       break;
     case TimeMenuAction::DayNext:
-      editDay = (editDay % daysInMonth(editMonth)) + 1;
+      editDay = (editDay % daysInMonth(editMonth, editYear)) + 1;
       break;
     case TimeMenuAction::WeekdayNext:
       editWeekday = (editWeekday + 1) % 7;
+      break;
+    case TimeMenuAction::YearNext:
+      editYear = editYear >= 2069 ? 2020 : editYear + 1;
+      if (editDay > daysInMonth(editMonth, editYear)) {
+        editDay = daysInMonth(editMonth, editYear);
+      }
       break;
     case TimeMenuAction::Cancel:
       closeConfigMenu();
@@ -230,7 +255,26 @@ void onTimeMenuAction(lv_event_t *event) {
       calendarMonth = editMonth;
       calendarDay = editDay;
       calendarWeekday = editWeekday;
+      calendarYear = editYear;
       calendarBaseDay = currentDays;
+
+      Preferences preferences;
+      if (preferences.begin("casio-clock", false)) {
+        preferences.putBool("use24", use24Hour);
+        preferences.end();
+      }
+
+      tm manualTime = {};
+      manualTime.tm_year = editYear - 1900;
+      manualTime.tm_mon = editMonth - 1;
+      manualTime.tm_mday = editDay;
+      manualTime.tm_wday = editWeekday;
+      manualTime.tm_hour = editHour;
+      manualTime.tm_min = editMinute;
+      manualTime.tm_sec = 0;
+      if (writeRtcDateTime(manualTime)) {
+        setClockUiTimeSource("RTC / MANUAL");
+      }
       refreshClock();
       closeConfigMenu();
       return;
@@ -263,7 +307,7 @@ void openConfigMenu(lv_event_t *event) {
   editMinute = (totalSeconds / 60) % 60;
   editUse24Hour = use24Hour;
   const unsigned long currentDay = totalSeconds / (24UL * 60UL * 60UL);
-  getCurrentDate(currentDay, editMonth, editDay, editWeekday);
+  getCurrentDate(currentDay, editMonth, editDay, editWeekday, editYear);
 
   configMenu = lv_obj_create(lv_scr_act());
   lv_obj_remove_style_all(configMenu);
@@ -326,18 +370,22 @@ void openConfigMenu(lv_event_t *event) {
   lv_obj_align(editPeriodButton, LV_ALIGN_TOP_MID, 0, 12);
   editPeriodLabel = lv_obj_get_child(editPeriodButton, 0);
 
-  lv_obj_t *monthButton = createMenuButton(panel, "MONTH 1", 180, 52,
+  lv_obj_t *monthButton = createMenuButton(panel, "MONTH 1", 150, 52,
                                            TimeMenuAction::MonthNext);
-  lv_obj_align(monthButton, LV_ALIGN_BOTTOM_LEFT, 42, -12);
+  lv_obj_align(monthButton, LV_ALIGN_BOTTOM_LEFT, 18, -12);
   editMonthLabel = lv_obj_get_child(monthButton, 0);
-  lv_obj_t *dayButton = createMenuButton(panel, "DAY 01", 180, 52,
+  lv_obj_t *dayButton = createMenuButton(panel, "DAY 01", 150, 52,
                                          TimeMenuAction::DayNext);
-  lv_obj_align(dayButton, LV_ALIGN_BOTTOM_MID, 0, -12);
+  lv_obj_align(dayButton, LV_ALIGN_BOTTOM_LEFT, 202, -12);
   editDayLabel = lv_obj_get_child(dayButton, 0);
-  lv_obj_t *weekdayButton = createMenuButton(panel, "SUN", 180, 52,
+  lv_obj_t *weekdayButton = createMenuButton(panel, "SUN", 150, 52,
                                              TimeMenuAction::WeekdayNext);
-  lv_obj_align(weekdayButton, LV_ALIGN_BOTTOM_RIGHT, -42, -12);
+  lv_obj_align(weekdayButton, LV_ALIGN_BOTTOM_RIGHT, -202, -12);
   editWeekdayLabel = lv_obj_get_child(weekdayButton, 0);
+  lv_obj_t *yearButton = createMenuButton(panel, "2026", 150, 52,
+                                          TimeMenuAction::YearNext);
+  lv_obj_align(yearButton, LV_ALIGN_BOTTOM_RIGHT, -18, -12);
+  editYearLabel = lv_obj_get_child(yearButton, 0);
 
   lv_obj_t *cancel = createMenuButton(configMenu, "CANCEL", 170, 68,
                                       TimeMenuAction::Cancel);
@@ -351,6 +399,12 @@ void openConfigMenu(lv_event_t *event) {
 }  // namespace
 
 void createClockUi() {
+  Preferences preferences;
+  if (preferences.begin("casio-clock", true)) {
+    use24Hour = preferences.getBool("use24", false);
+    preferences.end();
+  }
+
   lv_obj_t *screen = lv_scr_act();
   lv_obj_set_style_bg_color(screen, lv_color_hex(0x17191B), 0);
   lv_obj_set_style_bg_opa(screen, LV_OPA_COVER, 0);
@@ -432,6 +486,7 @@ void setClockUiDateTime(const tm &dateTime) {
   calendarMonth = dateTime.tm_mon + 1;
   calendarDay = dateTime.tm_mday;
   calendarWeekday = dateTime.tm_wday;
+  calendarYear = dateTime.tm_year + 1900;
   calendarBaseDay = currentDays;
   refreshClock();
 }

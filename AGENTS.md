@@ -87,6 +87,10 @@ The `rtc-bringup` branch adds the onboard PCF85063ATL using official Waveshare E
 
 Hardware verification: a powered reset displayed `RTC` before `NTP SYNC`, confirming PCF85063 read-back followed by NTP correction/write-back. Full power-loss retention is not yet tested because no CR927 cell is installed.
 
+The `settings-persistence` branch stores the 12/24-hour preference using the built-in ESP32 `Preferences` NVS API. Manual Save writes year, month, day, weekday, hour, minute, and zero seconds to the RTC. The settings year range is 2020-2069, matching the current PCF85063 encoding used by this project, and calendar rollover handles Gregorian leap years.
+
+Hardware verification: manual RTC values and the 12/24-hour preference survived Reset, followed by successful NTP correction.
+
 ## Development Commands
 
 Build:
@@ -132,3 +136,4 @@ If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload o
 7. Build the clock UI. In progress.
 8. Add Wi-Fi/NTP time synchronization. In progress.
 9. Evaluate onboard RTC and other peripherals. PCF85063 bring-up verified; CR927 power-loss retention remains untested.
+10. Persist clock preferences and manual RTC settings. Done on `settings-persistence`.
