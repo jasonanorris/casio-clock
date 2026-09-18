@@ -98,6 +98,8 @@ Hardware verification: the board successfully displayed the `LVGL OK` screen and
 
 The `clock-prototype` branch now contains the first watch-face layout. This is still a rendering and interaction prototype; real time synchronization comes later.
 
+UI code and temporary clock state live in `src/clock_ui.cpp`. The verified RGB panel, GT911 touch, and LVGL driver integration remain isolated in `src/lvgl_bringup.cpp`.
+
 ## Build
 
 ```bash
