@@ -83,6 +83,10 @@ Keep UI rendering, settings interactions, and temporary clock state in `src/cloc
 
 Wi-Fi/NTP behavior lives in `src/network_time.cpp`. Credentials live only in the gitignored `include/wifi_credentials.h`; keep `include/wifi_credentials.h.example` free of real credentials. The current timezone is Central Time with US daylight saving rules.
 
+The `rtc-bringup` branch adds the onboard PCF85063ATL using official Waveshare ESP32-S3-Touch-LCD-5 sources. Verified RTC configuration: I2C address `0x51`, SDA GPIO8, SCL GPIO9, shared with touch and CH422G. `src/rtc_time.cpp` uses the already initialized I2C driver; do not call `Wire.begin()` again after touch initialization. Boot priority is valid RTC time first, NTP correction second, and manual/offline time as fallback.
+
+Hardware verification: a powered reset displayed `RTC` before `NTP SYNC`, confirming PCF85063 read-back followed by NTP correction/write-back. Full power-loss retention is not yet tested because no CR927 cell is installed.
+
 ## Development Commands
 
 Build:
@@ -127,4 +131,4 @@ If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload o
 6. Build first simple clock screen. Done.
 7. Build the clock UI. In progress.
 8. Add Wi-Fi/NTP time synchronization. In progress.
-9. Evaluate onboard RTC and other peripherals.
+9. Evaluate onboard RTC and other peripherals. PCF85063 bring-up verified; CR927 power-loss retention remains untested.

@@ -55,6 +55,10 @@ The firmware:
 
 The firmware can connect to Wi-Fi and synchronize from NTP when local credentials are configured. It uses the `America/Chicago` Central Time rules, including daylight saving time. If Wi-Fi or NTP is unavailable, the displayed time and calendar continue locally using `millis()` and the manual settings remain available. Manual settings are not yet persisted across reboot.
 
+The `rtc-bringup` branch adds the onboard PCF85063ATL RTC verified from Waveshare's official schematic and Arduino example. It uses I2C address `0x51` on the shared GPIO8/GPIO9 bus. At boot, a valid RTC value is loaded before Wi-Fi connects; successful NTP synchronization then corrects both the display and RTC. An invalid oscillator-stop value is rejected instead of being shown.
+
+Hardware verification: after reset with board power maintained, the display showed `RTC` before changing to `NTP SYNC`, confirming RTC read-back and subsequent network correction. A CR927 cell is still required to verify retention across complete power removal.
+
 ## Wi-Fi Credentials
 
 Copy the structure from `include/wifi_credentials.h.example` into the gitignored `include/wifi_credentials.h`, then set `Ssid` and `Password`. An empty local credentials file is created during initial setup so the project builds in offline mode without exposing credentials.
@@ -161,7 +165,7 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 6. Build first simple clock screen. Done on `clock-prototype`.
 7. Build the Casio F-91W-inspired clock UI. In progress on `clock-prototype`.
 8. Add Wi-Fi/NTP time synchronization. In progress on `clock-prototype`.
-9. Evaluate the onboard RTC and other peripherals.
+9. Evaluate the onboard RTC and other peripherals. PCF85063 bring-up verified on `rtc-bringup`; power-loss retention remains to be tested with a CR927 cell.
 
 ## References
 
@@ -169,3 +173,4 @@ If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and 
 - Waveshare official GitHub examples for `ESP32-S3-Touch-LCD-5`
 - Espressif Arduino ESP32 framework documentation
 - PlatformIO Espressif32 documentation
+- Waveshare official ESP32-S3-Touch-LCD-5 schematic and `04_RTC_Test` example
