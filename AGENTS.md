@@ -10,7 +10,7 @@ Project path:
 /home/mint/projects/casio-clock
 ```
 
-The current milestone is the first simple LVGL clock prototype on `clock-prototype`. Do not implement the final Casio F-91W-inspired UI yet.
+The current milestone is the first F-91W-inspired LVGL clock face on `clock-prototype`. Keep it focused on visual layout and local touch interaction.
 
 ## Target Hardware
 
@@ -75,7 +75,7 @@ The touch serial test lives in `src/touch_serial_test.cpp`. It uses official 5B 
 
 The LVGL bring-up test lives in `src/lvgl_bringup.cpp` and uses `include/lv_conf.h`. It pins `lvgl/lvgl@8.4.0` in `platformio.ini`, matching Waveshare's LVGL v8 guidance for the ESP32-S3-Touch-LCD-5 family. Hardware displayed the `LVGL OK` screen and the touch button worked.
 
-The `clock-prototype` branch currently uses `millis()` as a temporary timebase and displays elapsed `HH:MM:SS` from boot. Do not add Wi-Fi, NTP, RTC, or final Casio visual styling unless explicitly asked.
+The `clock-prototype` branch currently uses `millis()` as a temporary timebase and displays elapsed time from boot. It includes the first F-91W-inspired face, a touch-controlled simulated illuminator, and a settings overlay opened by an invisible 200x200 upper-right hotspot. The display defaults to 12-hour time and can be switched between 12-hour and 24-hour formats in Settings. Manual time and format settings are volatile and reset after reboot. Keep this menu extensible for later settings. Do not add Wi-Fi, NTP, RTC, or settings persistence unless explicitly asked.
 
 ## Development Commands
 
@@ -118,7 +118,7 @@ If the board re-enumerates as `/dev/ttyACM1`, use `/dev/ttyACM1` in the upload o
 3. Display a simple image, color, or test pattern on the LCD. Done.
 4. Add touch input. Done.
 5. Add LVGL. Done.
-6. Build first simple clock screen. In progress.
-7. Build the clock UI.
+6. Build first simple clock screen. Done.
+7. Build the clock UI. In progress.
 8. Add Wi-Fi/NTP time synchronization.
 9. Evaluate onboard RTC and other peripherals.
