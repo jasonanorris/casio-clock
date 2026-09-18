@@ -64,7 +64,7 @@ constexpr uint8_t TouchResetExio = 1;
 constexpr uint8_t LcdBacklightExio = 2;
 constexpr uint8_t LcdResetExio = 3;
 constexpr int MaxTouchPoints = 5;
-constexpr int DrawBufferRows = 40;
+constexpr int PartialDrawBufferRows = 40;
 
 LCD *lcd = nullptr;
 TouchGT911 *touch = nullptr;
@@ -72,6 +72,7 @@ lv_disp_draw_buf_t drawBuffer;
 lv_disp_drv_t displayDriver;
 lv_indev_drv_t inputDriver;
 lv_color_t *drawBufferPixels = nullptr;
+size_t drawBufferPixelCount = 0;
 unsigned long lastLvglTickMs = 0;
 unsigned long lastClockUpdateMs = 0;
 
@@ -293,17 +294,27 @@ void touchRead(lv_indev_drv_t *indev, lv_indev_data_t *data) {
 bool initLvgl() {
   Serial.println("Initializing LVGL 8.4.0");
 
+  drawBufferPixelCount = ScreenWidth * ScreenHeight;
   drawBufferPixels = static_cast<lv_color_t *>(heap_caps_malloc(
-      ScreenWidth * DrawBufferRows * sizeof(lv_color_t),
+      drawBufferPixelCount * sizeof(lv_color_t),
       MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
   if (drawBufferPixels == nullptr) {
-    Serial.println("LVGL draw buffer allocation failed");
-    return false;
+    Serial.println("Full-screen LVGL buffer unavailable; using partial buffer");
+    drawBufferPixelCount = ScreenWidth * PartialDrawBufferRows;
+    drawBufferPixels = static_cast<lv_color_t *>(heap_caps_malloc(
+        drawBufferPixelCount * sizeof(lv_color_t),
+        MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
+    if (drawBufferPixels == nullptr) {
+      Serial.println("LVGL draw buffer allocation failed");
+      return false;
+    }
+  } else {
+    Serial.println("Using full-screen LVGL draw buffer in PSRAM");
   }
 
   lv_init();
   lv_disp_draw_buf_init(&drawBuffer, drawBufferPixels, nullptr,
-                        ScreenWidth * DrawBufferRows);
+                        drawBufferPixelCount);
 
   lv_disp_drv_init(&displayDriver);
   displayDriver.hor_res = ScreenWidth;

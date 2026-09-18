@@ -115,6 +115,10 @@ The `clock-prototype` branch now contains the first watch-face layout. This is s
 
 UI code and temporary clock state live in `src/clock_ui.cpp`. The verified RGB panel, GT911 touch, and LVGL driver integration remain isolated in `src/lvgl_bringup.cpp`.
 
+The Settings overlay is assembled while hidden and revealed only after all controls are ready, avoiding visible incremental redraws on the RGB panel.
+
+LVGL uses a full 1024x600 RGB565 draw buffer in PSRAM so full-screen transitions flush as one frame instead of visible 40-row bands. If that allocation fails, firmware falls back to the smaller partial buffer and continues running.
+
 ## Build
 
 ```bash

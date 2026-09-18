@@ -152,6 +152,7 @@ void closeConfigMenu() {
   if (configMenu == nullptr) {
     return;
   }
+  lv_obj_add_flag(configMenu, LV_OBJ_FLAG_HIDDEN);
   lv_obj_del(configMenu);
   configMenu = nullptr;
   editHourLabel = nullptr;
@@ -310,6 +311,7 @@ void openConfigMenu(lv_event_t *event) {
   getCurrentDate(currentDay, editMonth, editDay, editWeekday, editYear);
 
   configMenu = lv_obj_create(lv_scr_act());
+  lv_obj_add_flag(configMenu, LV_OBJ_FLAG_HIDDEN);
   lv_obj_remove_style_all(configMenu);
   lv_obj_set_size(configMenu, ScreenWidth, ScreenHeight);
   lv_obj_set_style_bg_color(configMenu, lv_color_hex(0x17191B), 0);
@@ -395,6 +397,7 @@ void openConfigMenu(lv_event_t *event) {
   lv_obj_align(save, LV_ALIGN_BOTTOM_RIGHT, -132, -42);
   lv_obj_set_style_bg_color(save, lv_color_hex(0x287C8D), 0);
   updateTimeEditor();
+  lv_obj_clear_flag(configMenu, LV_OBJ_FLAG_HIDDEN);
 }
 }  // namespace
 

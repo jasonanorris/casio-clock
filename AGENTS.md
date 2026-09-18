@@ -81,6 +81,10 @@ Settings also allows month, day, and weekday adjustment. The temporary calendar 
 
 Keep UI rendering, settings interactions, and temporary clock state in `src/clock_ui.cpp`. Keep `src/lvgl_bringup.cpp` focused on the verified 1024x600 LCD, GT911 touch, and LVGL driver plumbing.
 
+Build full-screen overlays with `LV_OBJ_FLAG_HIDDEN` set, then reveal them after their child controls and state are complete. This prevents incremental object construction from reaching the display.
+
+LVGL now attempts a full 1024x600 RGB565 draw buffer in PSRAM to avoid banded full-screen transitions, with a 40-row partial-buffer fallback. Preserve the fallback when changing display memory behavior.
+
 Wi-Fi/NTP behavior lives in `src/network_time.cpp`. Credentials live only in the gitignored `include/wifi_credentials.h`; keep `include/wifi_credentials.h.example` free of real credentials. The current timezone is Central Time with US daylight saving rules.
 
 The `rtc-bringup` branch adds the onboard PCF85063ATL using official Waveshare ESP32-S3-Touch-LCD-5 sources. Verified RTC configuration: I2C address `0x51`, SDA GPIO8, SCL GPIO9, shared with touch and CH422G. `src/rtc_time.cpp` uses the already initialized I2C driver; do not call `Wire.begin()` again after touch initialization. Boot priority is valid RTC time first, NTP correction second, and manual/offline time as fallback.
