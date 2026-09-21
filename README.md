@@ -7,6 +7,8 @@ The full 1024x600 display is used as the watch LCD face: large segmented time,
 weekday, day number, AM/PM or 24H indicator, touch settings, NTP time sync, RTC
 support, and a simple dark screensaver.
 
+![Simulator screenshot of the clock face](docs/images/simulator-clock-face.png)
+
 ## Hardware
 
 This project targets the Waveshare `ESP32-S3-Touch-LCD-5B`:
