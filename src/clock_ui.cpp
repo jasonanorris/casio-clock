@@ -251,7 +251,7 @@ void closeScreensaver(lv_event_t *event) {
   if (lv_event_get_code(event) != LV_EVENT_CLICKED || screensaver == nullptr) {
     return;
   }
-  hideScreensaver(screensaverAutomatic);
+  hideScreensaver(isSleepModeTime(getClockSeconds()));
 }
 
 void showScreensaver(bool automatic) {
@@ -299,7 +299,10 @@ void showScreensaver(bool automatic) {
 }
 
 void openScreensaver(lv_event_t *event) {
-  if (lv_event_get_code(event) == LV_EVENT_CLICKED) {
+  const bool dismissedDuringSleep =
+      sleepModeDismissed && isSleepModeTime(getClockSeconds());
+  if (lv_event_get_code(event) == LV_EVENT_CLICKED &&
+      !dismissedDuringSleep) {
     showScreensaver(false);
   }
 }
@@ -312,6 +315,9 @@ void updateSleepMode(unsigned long totalSeconds) {
       hideScreensaver(false);
     }
     return;
+  }
+  if (screensaver != nullptr) {
+    screensaverAutomatic = true;
   }
   if (screensaver == nullptr && !sleepModeDismissed) {
     showScreensaver(true);
@@ -631,7 +637,7 @@ void openConfigMenu(lv_event_t *event) {
 
   lv_obj_t *title = createLabel(configMenu, "SETTINGS", &lv_font_montserrat_32,
                                 0xF1F3F4);
-  lv_obj_align(title, LV_ALIGN_TOP_LEFT, 72, 30);
+  lv_obj_align(title, LV_ALIGN_TOP_LEFT, 42, 54);
 
   timeDatePage = lv_obj_create(configMenu);
   lv_obj_remove_style_all(timeDatePage);
@@ -640,15 +646,15 @@ void openConfigMenu(lv_event_t *event) {
 
   format12Button = createMenuButton(timeDatePage, "12 HOUR", 170, 54,
                                     TimeMenuAction::Format12);
-  lv_obj_align(format12Button, LV_ALIGN_TOP_LEFT, 290, 108);
+  lv_obj_align(format12Button, LV_ALIGN_TOP_LEFT, 290, 88);
   format24Button = createMenuButton(timeDatePage, "24 HOUR", 170, 54,
                                     TimeMenuAction::Format24);
-  lv_obj_align(format24Button, LV_ALIGN_TOP_RIGHT, -62, 108);
+  lv_obj_align(format24Button, LV_ALIGN_TOP_RIGHT, -62, 88);
 
   lv_obj_t *panel = lv_obj_create(timeDatePage);
   lv_obj_remove_style_all(panel);
   lv_obj_set_size(panel, 720, 290);
-  lv_obj_set_pos(panel, 272, 178);
+  lv_obj_set_pos(panel, 272, 158);
   lv_obj_clear_flag(panel, LV_OBJ_FLAG_CLICKABLE);
   lv_obj_clear_flag(panel, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -707,15 +713,15 @@ void openConfigMenu(lv_event_t *event) {
 
   lv_obj_t *sleepTitle = createLabel(screensaverPage, "SLEEP MODE",
                                      &lv_font_montserrat_20, 0xB8BDC0);
-  lv_obj_align(sleepTitle, LV_ALIGN_TOP_LEFT, 300, 105);
+  lv_obj_align(sleepTitle, LV_ALIGN_TOP_LEFT, 300, 85);
   sleepModeButton = createMenuButton(screensaverPage, "OFF", 150, 54,
                                      TimeMenuAction::ToggleSleepMode);
-  lv_obj_align(sleepModeButton, LV_ALIGN_TOP_LEFT, 470, 88);
+  lv_obj_align(sleepModeButton, LV_ALIGN_TOP_LEFT, 470, 68);
   sleepModeLabel = lv_obj_get_child(sleepModeButton, 0);
 
   lv_obj_t *sleepPanel = lv_obj_create(screensaverPage);
   lv_obj_set_size(sleepPanel, 680, 250);
-  lv_obj_align(sleepPanel, LV_ALIGN_TOP_RIGHT, -42, 180);
+  lv_obj_align(sleepPanel, LV_ALIGN_TOP_RIGHT, -42, 160);
   lv_obj_set_style_bg_color(sleepPanel, lv_color_hex(0x25282B), 0);
   lv_obj_set_style_border_color(sleepPanel, lv_color_hex(0x555B60), 0);
   lv_obj_set_style_border_width(sleepPanel, 2, 0);
@@ -762,14 +768,14 @@ void openConfigMenu(lv_event_t *event) {
 
   timeDateNavButton = createMenuButton(configMenu, "TIME & DATE", 190, 52,
                                        TimeMenuAction::ShowTimeDate);
-  lv_obj_align(timeDateNavButton, LV_ALIGN_TOP_LEFT, 42, 112);
+  lv_obj_align(timeDateNavButton, LV_ALIGN_TOP_LEFT, 42, 106);
   screensaverNavButton = createMenuButton(
       configMenu, "SCREENSAVER", 190, 52, TimeMenuAction::ShowScreensaver);
-  lv_obj_align(screensaverNavButton, LV_ALIGN_TOP_LEFT, 42, 174);
+  lv_obj_align(screensaverNavButton, LV_ALIGN_TOP_LEFT, 42, 168);
 
   lv_obj_t *navDivider = lv_obj_create(configMenu);
   lv_obj_remove_style_all(navDivider);
-  lv_obj_set_pos(navDivider, 252, 108);
+  lv_obj_set_pos(navDivider, 252, 128);
   lv_obj_set_size(navDivider, 2, 360);
   lv_obj_set_style_bg_color(navDivider, lv_color_hex(0x555B60), 0);
   lv_obj_set_style_bg_opa(navDivider, LV_OPA_COVER, 0);
@@ -777,10 +783,10 @@ void openConfigMenu(lv_event_t *event) {
 
   lv_obj_t *cancel = createMenuButton(configMenu, "CANCEL", 170, 68,
                                       TimeMenuAction::Cancel);
-  lv_obj_align(cancel, LV_ALIGN_BOTTOM_LEFT, 272, -24);
+  lv_obj_align(cancel, LV_ALIGN_BOTTOM_LEFT, 272, -44);
   lv_obj_t *save = createMenuButton(configMenu, "SAVE", 170, 68,
                                     TimeMenuAction::Save);
-  lv_obj_align(save, LV_ALIGN_BOTTOM_RIGHT, -32, -24);
+  lv_obj_align(save, LV_ALIGN_BOTTOM_RIGHT, -32, -44);
   lv_obj_set_style_bg_color(save, lv_color_hex(0x287C8D), 0);
   updateTimeEditor();
   updateSleepEditor();
@@ -819,32 +825,32 @@ void createClockUi() {
   lv_obj_clear_flag(lcdPanel, LV_OBJ_FLAG_CLICKABLE);
 
   modeLabel = createLabel(lcdPanel, "AM", &lv_font_montserrat_48, 0x202821);
-  lv_obj_align(modeLabel, LV_ALIGN_TOP_LEFT, 44, 92);
+  lv_obj_align(modeLabel, LV_ALIGN_TOP_LEFT, 44, 112);
   modeBoldLabel =
       createLabel(lcdPanel, "AM", &lv_font_montserrat_48, 0x202821);
-  lv_obj_align(modeBoldLabel, LV_ALIGN_TOP_LEFT, 46, 92);
+  lv_obj_align(modeBoldLabel, LV_ALIGN_TOP_LEFT, 46, 112);
   constexpr uint32_t SegmentColor = 0x202821;
-  createWeekdaySegmentGlyph(weekdayGlyphs[0], lcdPanel, 347, 34,
+  createWeekdaySegmentGlyph(weekdayGlyphs[0], lcdPanel, 347, 64,
                             SegmentColor);
-  createWeekdaySegmentGlyph(weekdayGlyphs[1], lcdPanel, 415, 34,
+  createWeekdaySegmentGlyph(weekdayGlyphs[1], lcdPanel, 415, 64,
                             SegmentColor);
-  createSevenSegmentDigit(dateDigits[0], lcdPanel, 868, 34, 60, 104,
+  createSevenSegmentDigit(dateDigits[0], lcdPanel, 868, 64, 60, 104,
                           SevenSegmentProfile::Top, SegmentColor);
-  createSevenSegmentDigit(dateDigits[1], lcdPanel, 936, 34, 60, 104,
+  createSevenSegmentDigit(dateDigits[1], lcdPanel, 936, 64, 60, 104,
                           SevenSegmentProfile::Top, SegmentColor);
-  createSevenSegmentDigit(timeDigits[0], lcdPanel, 34, 205, 148, 342,
+  createSevenSegmentDigit(timeDigits[0], lcdPanel, 34, 215, 148, 342,
                           SevenSegmentProfile::Large, SegmentColor);
-  createSevenSegmentDigit(timeDigits[1], lcdPanel, 184, 205, 148, 342,
+  createSevenSegmentDigit(timeDigits[1], lcdPanel, 184, 215, 148, 342,
                           SevenSegmentProfile::Large, SegmentColor);
-  createLcdDot(lcdPanel, 356, 302, 34);
-  createLcdDot(lcdPanel, 351, 420, 34);
-  createSevenSegmentDigit(timeDigits[2], lcdPanel, 404, 205, 148, 342,
+  createLcdDot(lcdPanel, 356, 312, 34);
+  createLcdDot(lcdPanel, 351, 430, 34);
+  createSevenSegmentDigit(timeDigits[2], lcdPanel, 404, 215, 148, 342,
                           SevenSegmentProfile::Large, SegmentColor);
-  createSevenSegmentDigit(timeDigits[3], lcdPanel, 554, 205, 148, 342,
+  createSevenSegmentDigit(timeDigits[3], lcdPanel, 554, 215, 148, 342,
                           SevenSegmentProfile::Large, SegmentColor);
-  createSevenSegmentDigit(secondDigits[0], lcdPanel, 750, 326, 112, 221,
+  createSevenSegmentDigit(secondDigits[0], lcdPanel, 750, 336, 112, 221,
                           SevenSegmentProfile::Small, SegmentColor);
-  createSevenSegmentDigit(secondDigits[1], lcdPanel, 870, 326, 112, 221,
+  createSevenSegmentDigit(secondDigits[1], lcdPanel, 870, 336, 112, 221,
                           SevenSegmentProfile::Small, SegmentColor);
 
   lv_obj_t *screensaverHotspot = lv_obj_create(screen);
