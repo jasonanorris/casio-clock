@@ -1,247 +1,264 @@
 # casio-clock
 
-Embedded firmware project for a standalone, oversized Casio F-91W-inspired digital clock.
+A standalone, oversized Casio F-91W-inspired digital clock for the Waveshare
+ESP32-S3 5-inch capacitive touchscreen board.
 
-## Target Hardware
+The full 1024x600 display is used as the watch LCD face: large segmented time,
+weekday, day number, AM/PM or 24H indicator, touch settings, NTP time sync, RTC
+support, and a simple dark screensaver.
 
-This project targets the Waveshare `ESP32-S3-Touch-LCD-5B` development board:
+## Hardware
 
-- ESP32-S3-WROOM-1-N16R8 module
+This project targets the Waveshare `ESP32-S3-Touch-LCD-5B`:
+
+- ESP32-S3-WROOM-1-N16R8
 - 16 MB flash
 - 8 MB PSRAM
 - 5-inch 1024x600 RGB LCD
 - Capacitive touch
-- Native ESP32-S3 USB
-- Linux serial device: usually `/dev/ttyACM0`, but native USB can re-enumerate as `/dev/ttyACM1` or another ACM number after reset
-- Observed USB ID: `303a:1001 Espressif USB JTAG/serial debug unit`
+- Native ESP32-S3 USB serial/JTAG
+- PCF85063ATL RTC
 
-Important: this is the 1024x600 `5B` model, not the 800x480 `ESP32-S3-Touch-LCD-5` model. LCD settings, pin mappings, timings, and examples must be verified for the 1024x600 board before use.
+Important: this is for the 1024x600 `ESP32-S3-Touch-LCD-5B` model, not the
+800x480 `ESP32-S3-Touch-LCD-5`. The LCD timings, GPIO mappings, and examples
+are not interchangeable.
 
-## Development Environment
+## What Works
 
-- Linux Mint
-- VS Code
-- Codex
-- PlatformIO CLI
-- Arduino ESP32 framework
-- C/C++
+- F-91W-inspired LCD-style clock face
+- 12-hour and 24-hour display modes
+- Touch settings menu from an invisible upper-right hotspot
+- Manual time/date setting
+- Wi-Fi/NTP synchronization
+- RTC read/write support
+- Persistent settings using ESP32 NVS
+- Dark bouncing-time screensaver from an invisible upper-left hotspot
+- Optional sleep-mode schedule for the screensaver
+- Desktop SDL2 simulator for UI work without flashing the board
+
+## Requirements
+
 - Git
-- CMake and SDL2 for the optional desktop simulator
+- PlatformIO CLI
+- A USB-C data cable
+- Linux, macOS, or Windows
 
-PlatformIO is installed locally for this project in `.venv`. Use `.venv/bin/pio` from the project root.
+The examples below use Linux shell commands. On Linux, the board usually appears
+as `/dev/ttyACM0`, but it can re-enumerate as `/dev/ttyACM1` after reset.
 
-## Current Project Status
+On Debian/Ubuntu/Linux Mint, you may need serial-device permissions:
 
-Current milestone: first F-91W-inspired LVGL clock face on `clock-prototype`.
+```bash
+sudo usermod -aG dialout "$USER"
+```
 
-The firmware:
+Log out and back in after changing groups.
 
-- initializes serial at 115200 baud
-- prints a clear startup banner
-- prints ESP32 chip information
-- prints flash size
-- prints detected PSRAM size
-- prints heap and PSRAM availability
-- initializes the CH422G IO expander for LCD reset/backlight
-- initializes the ST7262 RGB LCD using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` timing/pin data
-- initializes LVGL 8.4.0
-- displays an F-91W-inspired watch face with digital `HH:MM:SS`, weekday, and date indicators
-- initializes the GT911 capacitive touch controller using the official Waveshare 1024x600 `ESP32-S3-Touch-LCD-5B` touch data
-- routes touch input into LVGL and toggles the simulated LCD illuminator when pressed
-- opens a settings menu from an invisible 200x200 hotspot in the upper-right corner
-- opens a dark bouncing-time screensaver from an invisible 200x200 hotspot in
-  the upper-left corner; tap the screensaver to return to the clock
-- allows the temporary local clock time to be adjusted by hour and minute
-- supports 12-hour and 24-hour display formats, defaulting to 12-hour
-- allows month, day, and weekday to be adjusted in Settings
-- prints a heartbeat once per second
+## Quick Start
 
-The firmware can connect to Wi-Fi and synchronize from NTP when local credentials are configured. It uses the `America/Chicago` Central Time rules, including daylight saving time. If Wi-Fi or NTP is unavailable, the displayed time and calendar continue locally using `millis()` and the manual settings remain available. Manual settings are not yet persisted across reboot.
+Clone the repo:
 
-The `rtc-bringup` branch adds the onboard PCF85063ATL RTC verified from Waveshare's official schematic and Arduino example. It uses I2C address `0x51` on the shared GPIO8/GPIO9 bus. At boot, a valid RTC value is loaded before Wi-Fi connects; successful NTP synchronization then corrects both the display and RTC. An invalid oscillator-stop value is rejected instead of being shown.
+```bash
+git clone https://github.com/jasonanorris/casio-clock.git
+cd casio-clock
+```
 
-Hardware verification: after reset with board power maintained, the display showed `RTC` before changing to `NTP SYNC`, confirming RTC read-back and subsequent network correction. A CR927 cell is still required to verify retention across complete power removal.
+Install PlatformIO if you do not already have it:
 
-The `settings-persistence` branch stores the 12/24-hour preference in ESP32 NVS. Settings now includes year selection from 2020 through 2069 with Gregorian leap-year handling. Saving manual time/date writes the complete value to the PCF85063 and labels the source `RTC / MANUAL`; the RTC then supplies that value after reset. Wi-Fi credentials remain in their separate gitignored header.
+```bash
+python3 -m pip install --user platformio
+```
 
-Hardware verification: manual RTC time/date/year and the NVS-backed 12/24-hour preference survived Reset, then NTP corrected the clock normally.
+Build the firmware:
 
-## Wi-Fi Credentials
+```bash
+pio run
+```
 
-Copy the structure from `include/wifi_credentials.h.example` into the gitignored `include/wifi_credentials.h`, then set `Ssid` and `Password`. An empty local credentials file is created during initial setup so the project builds in offline mode without exposing credentials.
+Find the board port:
 
-Never commit `include/wifi_credentials.h`. The file is explicitly ignored by Git.
+```bash
+ls -l /dev/ttyACM*
+```
 
-The initial LCD test showed an observed refresh callback rate of about 24 FPS, which matches the 21 MHz pixel clock and official porch timing currently in use. Some visible flicker may be expected at this bring-up stage.
+Upload to the board:
 
-## PlatformIO Configuration
+```bash
+pio run -t upload --upload-port /dev/ttyACM0
+```
 
-There does not appear to be a standard exact PlatformIO board ID for the Waveshare `ESP32-S3-Touch-LCD-5B`, so this project includes a local board manifest at `boards/waveshare_esp32_s3_touch_lcd_5b.json`. It uses the generic ESP32-S3 Arduino variant while explicitly configuring the important board facts:
+Open the serial monitor:
 
-- `board = waveshare_esp32_s3_touch_lcd_5b`
-- 16 MB flash
-- 8 MB OPI PSRAM
-- QIO flash mode
-- USB CDC on boot for native USB serial
-- upload and monitor ports are not fixed in `platformio.ini`; pass the current `/dev/ttyACM*` path on the command line when needed
+```bash
+pio device monitor --port /dev/ttyACM0 --baud 115200
+```
 
-The PlatformIO platform is pinned to the pioarduino ESP32 platform release for Arduino-ESP32 `3.0.7`, matching Waveshare's guidance to use Arduino ESP32 3.x and its FAQ note recommending Arduino ESP32 `3.0.7` for at least some examples.
+If your board appears as `/dev/ttyACM1`, use that path in the upload and monitor
+commands instead.
 
-LVGL is pinned to `lvgl/lvgl@8.4.0`, matching Waveshare's LVGL v8 example guidance for the ESP32-S3-Touch-LCD-5 family.
+## Wi-Fi Setup
 
-The display bring-up branch vendors the official Waveshare-bundled Arduino libraries under `lib/`:
+Wi-Fi credentials are optional. A fresh clone builds with Wi-Fi disabled by
+using `include/wifi_credentials.h.example` as a fallback. Without credentials,
+the clock still runs locally and can be set manually from the settings menu.
 
-- `ESP32_Display_Panel` 1.0.0
-- `ESP32_IO_Expander` 1.0.1
-- `esp-lib-utils` 0.1.2
+To enable NTP time sync, copy the example credentials file:
 
-These are kept local so the display test builds against the same versions shipped with Waveshare's example package.
+```bash
+cp include/wifi_credentials.h.example include/wifi_credentials.h
+```
 
-For LCD and touch bring-up, `lib/ESP32_Display_Panel/esp_panel_drivers_conf.h` is intentionally narrowed to the required RGB bus, I2C bus, ST7262 LCD driver, GT911 touch driver, and CH422G IO expander. This keeps the Waveshare 1024x600 display path explicit and avoids required drivers being compiled without runtime creation support.
+Edit `include/wifi_credentials.h`:
 
-The touch serial test uses the official 5B touch details:
+```cpp
+#pragma once
 
-- GT911 capacitive touch controller
-- I2C SDA GPIO 8
-- I2C SCL GPIO 9
-- GT911 I2C address `0x5D`
-- interrupt GPIO 4
-- reset through CH422G EXIO1
+namespace WifiCredentials {
+constexpr char Ssid[] = "YOUR_WIFI_NAME";
+constexpr char Password[] = "YOUR_WIFI_PASSWORD";
+}  // namespace WifiCredentials
+```
 
-Hardware verification: the board successfully prints GT911 touch coordinates and release events over serial while the LCD color bars remain visible.
+`include/wifi_credentials.h` is ignored by Git so local network credentials do
+not get committed.
 
-The LVGL bring-up test is intentionally minimal. It replaces the color-bar screen at boot with a simple LVGL scene and a touchable button. The older color-bar and touch-serial modules are still present as known-good hardware references.
+## Timezone And Defaults
 
-Hardware verification: the board successfully displayed the `LVGL OK` screen and the touch button worked.
+Clock behavior defaults live in `include/clock_config.h`.
 
-The `clock-prototype` branch now contains the first watch-face layout. This is still a rendering and interaction prototype; real time synchronization comes later.
+The default timezone is Central Time for `America/Chicago`:
 
-UI code and temporary clock state live in `src/clock_ui.cpp`. The verified RGB panel, GT911 touch, and LVGL driver integration remain isolated in `src/lvgl_bringup.cpp`.
+```cpp
+constexpr char Timezone[] = "CST6CDT,M3.2.0,M11.1.0";
+```
 
-The Settings and screensaver overlays are assembled while hidden and revealed
-only after their contents are ready, avoiding visible incremental redraws on
-the RGB panel. The screensaver shows only `H:MM` in light gray and moves slowly
-around the dark display, reversing direction at each edge.
+The ESP32 time API uses POSIX timezone rules instead of names like
+`America/Chicago`. To find another value, search the Arduino timezone list:
 
-Automatic sleep-mode defaults are configured in `include/clock_config.h`.
-Start and end times use local 24-hour `HH:MM` format with leading zeroes, such
-as `22:00` and `07:00`; overnight windows are supported. Automatic sleep mode
-is disabled by default. The Settings overlay has separate `TIME & DATE` and
-`SCREENSAVER` pages. The Screensaver page can enable sleep mode and edit start
-and end times in five-minute steps. Saved values are persisted in ESP32 NVS and
-override the compile-time defaults. A scheduled screensaver can be dismissed by
-tapping it and remains dismissed until the configured sleep window ends.
+https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h
 
-LVGL uses a full 1024x600 RGB565 draw buffer in PSRAM so full-screen transitions flush as one frame instead of visible 40-row bands. If that allocation fails, firmware falls back to the smaller partial buffer and continues running.
+For example, search that file for `TZ_America_New_York` and copy the string
+inside `PSTR("...")`.
 
-## Desktop UI Simulator
+The same file also contains the default sleep-mode screensaver schedule:
 
-The `simulator/` target renders the same `src/clock_ui.cpp` interface in a
-1024x600 SDL2 window. Mouse input acts as touch input, including the invisible
-upper-right Settings hotspot. Hardware-only display timing, GT911, RTC, and
-Wi-Fi behavior still require testing on the board.
+```cpp
+constexpr bool SleepModeEnabled = true;
+constexpr char SleepModeStart[] = "22:00";
+constexpr char SleepModeEnd[] = "07:00";
+```
 
-The clock face uses a shared custom seven-segment LVGL component for the large
-hours/minutes and smaller seconds. Its layout follows the F-91W LCD references:
-`AM`/`PM` or `24H` at upper-left, two-letter weekday centered, and day of month
-at upper-right. The entire 1024x600 panel represents the LCD itself; the normal
-clock view intentionally has no simulated watch bezel, branding, status text,
-or other exterior decoration.
+Sleep-mode times use local 24-hour `HH:MM` format. Overnight windows are
+supported.
 
-The digit silhouettes come from
-`assets/neat-luulia-densor-8-filled.svg`. Run
-`python3 tools/generate_segment_assets.py` after changing that source to
-regenerate the cropped LVGL alpha masks in `src/seven_segment_assets.*`.
+Saved settings on the ESP32 override these compile-time defaults after the first
+time they are changed from the settings menu.
 
-The two-letter weekday uses the nine-segment source at
-`assets/neat-luulia-densor-9-filled.svg`. Its two center vertical segments form
-the middle strokes used by `M` and `W`. Regenerate its LVGL masks with
-`python3 tools/generate_weekday_assets.py`.
+## Controls
 
-Install the host build tools once:
+- Upper-right 200x200 area: open Settings
+- Upper-left 200x200 area: open Screensaver
+- Tap the screensaver: return to the clock
+
+The hotspots are intentionally invisible so the normal clock face looks like a
+plain LCD panel.
+
+## Desktop Simulator
+
+The simulator renders the same clock UI in a 1024x600 SDL2 window. It is useful
+for layout work, but it does not emulate the Waveshare RGB panel, GT911 touch
+controller, Wi-Fi, NVS, or RTC hardware.
+
+Install host dependencies on Debian/Ubuntu/Linux Mint:
 
 ```bash
 sudo apt install build-essential cmake libsdl2-dev
 ```
 
-Configure and build from the project root. The first configure downloads the
-pinned LVGL 8.4.0 and LVGL drivers 8.3.0 sources into the ignored build folder:
+Configure and build:
 
 ```bash
 cmake -S simulator -B simulator/build
 cmake --build simulator/build --target casio-clock-sim -j
 ```
 
-Run the simulator:
+Run:
 
 ```bash
 ./simulator/build/casio-clock-sim
 ```
 
-Close its window to stop it. Simulator settings last for the current process
-only and do not touch ESP32 NVS or the physical RTC.
+Mouse clicks act like touch input. Simulator settings last only for the current
+process.
 
-## Build
+## Project Layout
 
-```bash
-PLATFORMIO_CORE_DIR=.pio .venv/bin/pio run
-```
+- `platformio.ini` - PlatformIO environment and pinned dependencies
+- `boards/waveshare_esp32_s3_touch_lcd_5b.json` - local board definition
+- `include/clock_config.h` - user-editable clock defaults
+- `include/wifi_credentials.h.example` - Wi-Fi credentials template
+- `src/lvgl_bringup.cpp` - LCD, touch, and LVGL hardware setup
+- `src/clock_ui.cpp` - clock face, settings UI, and screensaver
+- `src/network_time.cpp` - Wi-Fi and NTP synchronization
+- `src/rtc_time.cpp` - PCF85063 RTC support
+- `simulator/` - desktop SDL2 simulator
+- `assets/` and `tools/` - source SVGs and generators for segmented digits
 
-## Upload
+## Platform Notes
 
-Do not upload without confirming with the project owner first.
+This repo includes a local PlatformIO board manifest because PlatformIO does not
+provide an exact standard board definition for this Waveshare 1024x600 board.
+The project explicitly configures:
 
-Find the current native USB serial device:
+- 16 MB flash
+- 8 MB OPI PSRAM
+- QIO flash mode
+- native USB CDC serial on boot
+
+The firmware currently uses:
+
+- Arduino ESP32 `3.0.7` through the pinned pioarduino platform
+- LVGL `8.4.0`
+- Waveshare-bundled display libraries vendored in `lib/`
+
+The display path uses verified Waveshare 1024x600 `5B` values for the RGB LCD,
+GT911 touch controller, and CH422G IO expander. Do not replace them with values
+from the 800x480 model.
+
+## Troubleshooting
+
+If upload fails, check that the port exists:
 
 ```bash
 ls -l /dev/ttyACM*
 ```
 
-When approved, upload to the current native USB serial device. Example:
+If the serial monitor disconnects after reset, the board probably re-enumerated.
+Run `ls -l /dev/ttyACM*` again and reopen the monitor with the new port.
+
+If PlatformIO cannot find `pio`, close and reopen your terminal after installing
+it, or use the full path shown by:
 
 ```bash
-PLATFORMIO_CORE_DIR=.pio .venv/bin/pio run -t upload --upload-port /dev/ttyACM0
+python3 -m site --user-base
 ```
 
-If the board re-enumerated as `/dev/ttyACM1`, use:
+If NTP never syncs, confirm `include/wifi_credentials.h` exists, the SSID and
+password are correct, and the board has Wi-Fi signal.
 
-```bash
-PLATFORMIO_CORE_DIR=.pio .venv/bin/pio run -t upload --upload-port /dev/ttyACM1
-```
+## License
 
-## Serial Monitor
+This project is licensed under the Apache License 2.0. See `LICENSE`.
 
-After upload, open the serial monitor with the current ACM port. Example:
+Third-party code and notices are listed in `THIRD_PARTY_NOTICES.md`. Vendored
+libraries under `lib/` retain their own license files and source notices.
 
-```bash
-PLATFORMIO_CORE_DIR=.pio .venv/bin/pio device monitor --port /dev/ttyACM0 --baud 115200
-```
-
-If the board re-enumerated as `/dev/ttyACM1`, use:
-
-```bash
-PLATFORMIO_CORE_DIR=.pio .venv/bin/pio device monitor --port /dev/ttyACM1 --baud 115200
-```
-
-If the monitor disconnects after pressing reset, check `/dev/ttyACM*` again and restart the monitor with the new port.
-
-## Planned Milestones
-
-1. Build and upload the minimal serial sanity test. Done.
-2. Find and verify the correct official Waveshare 1024x600 example. Done.
-3. Display a simple image, color, or test pattern on the LCD. Done on `lcd-color-test`.
-4. Bring up capacitive touch input. Done on `lcd-color-test`.
-5. Add LVGL. Done on `lvgl-bringup`.
-6. Build first simple clock screen. Done on `clock-prototype`.
-7. Build the Casio F-91W-inspired clock UI. In progress on `clock-prototype`.
-8. Add Wi-Fi/NTP time synchronization. In progress on `clock-prototype`.
-9. Evaluate the onboard RTC and other peripherals. PCF85063 bring-up verified on `rtc-bringup`; power-loss retention remains to be tested with a CR927 cell.
-10. Persist clock preferences and manual RTC settings. Done on `settings-persistence`.
+This project is inspired by the look of classic Casio F-91W digital watches, but
+it is not affiliated with or endorsed by Casio.
 
 ## References
 
-- Waveshare documentation for `ESP32-S3-Touch-LCD-5` family
-- Waveshare official GitHub examples for `ESP32-S3-Touch-LCD-5`
-- Espressif Arduino ESP32 framework documentation
+- Waveshare documentation for the ESP32-S3-Touch-LCD-5 family
+- Waveshare official ESP32-S3-Touch-LCD-5 examples
+- Espressif Arduino ESP32 documentation
 - PlatformIO Espressif32 documentation
-- Waveshare official ESP32-S3-Touch-LCD-5 schematic and `04_RTC_Test` example

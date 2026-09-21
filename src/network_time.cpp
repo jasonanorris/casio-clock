@@ -4,12 +4,17 @@
 #include <WiFi.h>
 #include <time.h>
 
+#include "clock_config.h"
 #include "clock_ui.h"
 #include "rtc_time.h"
+
+#if __has_include("wifi_credentials.h")
 #include "wifi_credentials.h"
+#else
+#include "wifi_credentials.h.example"
+#endif
 
 namespace {
-constexpr char Timezone[] = "CST6CDT,M3.2.0,M11.1.0";
 constexpr char NtpServer1[] = "pool.ntp.org";
 constexpr char NtpServer2[] = "time.nist.gov";
 constexpr unsigned long ConnectTimeoutMs = 15000;
@@ -73,7 +78,7 @@ void runNetworkTimeLoop() {
       Serial.printf("Wi-Fi connected: %s\n", WiFi.localIP().toString().c_str());
     }
     if (!timeConfigured) {
-      configTzTime(Timezone, NtpServer1, NtpServer2);
+      configTzTime(ClockConfig::Timezone, NtpServer1, NtpServer2);
       timeConfigured = true;
     }
     if ((lastSyncMs == 0 && now - lastSyncAttemptMs >= 1000) ||

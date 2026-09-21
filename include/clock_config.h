@@ -2,6 +2,12 @@
 
 namespace ClockConfig {
 
+// POSIX timezone rule used by ESP32 configTzTime().
+// America/Chicago: Central Time with US daylight saving rules.
+// To find another value, search the Arduino TZ list:
+// https://github.com/esp8266/Arduino/blob/master/cores/esp8266/TZ.h
+constexpr char Timezone[] = "CST6CDT,M3.2.0,M11.1.0";
+
 // Enables automatic screensaver activation during the configured time window.
 constexpr bool SleepModeEnabled = true;
 
