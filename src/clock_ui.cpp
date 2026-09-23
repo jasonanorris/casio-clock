@@ -299,10 +299,9 @@ void showScreensaver(bool automatic) {
 }
 
 void openScreensaver(lv_event_t *event) {
-  const bool dismissedDuringSleep =
-      sleepModeDismissed && isSleepModeTime(getClockSeconds());
-  if (lv_event_get_code(event) == LV_EVENT_CLICKED &&
-      !dismissedDuringSleep) {
+  // A sleep-window dismissal only suppresses automatic activation. The
+  // upper-left hotspot must always remain available for manual activation.
+  if (lv_event_get_code(event) == LV_EVENT_CLICKED) {
     showScreensaver(false);
   }
 }
